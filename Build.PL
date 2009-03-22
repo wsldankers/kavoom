@@ -7,6 +7,7 @@ use Module::Build;
 
 my $build = new Module::Build(
 	module_name => 'KVM::Kavoom',
+	dist_version => '1.0',
 	license => 'perl'
 );
 
