@@ -5,6 +5,8 @@ package KavoomBuilder;
 
 use base qw(Module::Build);
 
+*file_qr = \&Module::Build::Base::file_qr;
+
 sub process_pl_files {
 	my $self = shift;
 	my $files = $self->find_pl_files;
@@ -43,10 +45,10 @@ sub find_pl_files {
 	my $files = $self->{properties}{pl_files};
     if(UNIVERSAL::isa($files, 'ARRAY')) {
 		return {
-				map {$_, [/^(.*)\.pl$/]}
-				map $self->localize_file_path($_),
-				@$files
-			};
+			map {$_, [/^(.*)\.pl$/]}
+			map $self->localize_file_path($_),
+			@$files
+		};
 	} elsif(UNIVERSAL::isa($files, 'HASH')) {
 		my %out;
 		while(my ($file, $to) = each %$files) {
@@ -55,8 +57,7 @@ sub find_pl_files {
 			];
 		}
 		return \%out;
-
-	} else {
+	} elsif(defined $files) {
 		die "'pl_files' must be a hash reference or array reference";
 	}
   
