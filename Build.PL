@@ -7,23 +7,36 @@ package Script::Build;
 
 use base qw(Module::Build);
 
-sub compile_pl_file {
-	my $self = shift;
-	my $from = shift;
-	my @to = @_;
-
-	foreach
-}
-
 sub process_pl_files {
 	my $self = shift;
 	my $files = $self->find_pl_files;
   
 	while (my ($file, $to) = each %$files) {
-		unless($self->up_to_date($file, $to)) {
-			$self->run_perl_script($file, [], [@$to]) or die "$file failed";
-			$self->add_to_cleanup(@$to);
+		my @out;
+		my $perl = $self->perl;
+		foreach(@$to) {
+			next if $self->up_to_date($file, $_);
+			open my $fh, '>:raw', $_
+				or die "$_: $!\n";
+			push @out, $fh;
+			print $fh, "#! $perl\n\n"
+				or die "$_: $!\n";
 		}
+		next unless @out;
+		open my $in, '<:raw', $file
+			or die "$file: $!\n";
+		while(<$in>) {
+			foreach my $fh (@out) {
+				print $fh, $_
+					or die "can't write: $!\n";
+			}
+		}
+		close $in;
+		foreach my $fh (@out) {
+			close $fh
+				or die "can't close: $!\n";
+		}
+		$self->add_to_cleanup(@$to);
 	}
 }
 
@@ -45,9 +58,8 @@ sub find_pl_files {
 		}
 		return \%out;
 
-		} else {
-			die "'pl_files' must be a hash reference or array reference";
-		}
+	} else {
+		die "'pl_files' must be a hash reference or array reference";
 	}
   
 	return unless -d 'script';
@@ -67,5 +79,5 @@ my $build = new Script::Build(
 	module_name => 'KVM::Kavoom',
 	script_files => 'scripts/kavoom',
 );
-
+$build->add_build_element('pl');
 $build->create_build_script;
