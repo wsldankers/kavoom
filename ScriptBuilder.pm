@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-package KavoomBuilder;
+package ScriptBuilder;
 
 use base qw(Module::Build);
 
