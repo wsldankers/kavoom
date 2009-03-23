@@ -3,7 +3,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Module::Build;
+use ScriptBuilder;
 use Module::Build::Compat 0.02;
 
 Module::Build::Compat->run_build_pl(args => \@ARGV);
