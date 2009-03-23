@@ -12,22 +12,28 @@ use IO::File;
 sub process_pl_files {
 	my $self = shift;
 	my $files = $self->find_pl_files;
+
+	my $script = File::Spec->catdir($self->blib, 'script');
+	File::Path::mkpath($script);
   
-	while (my ($file, $to) = each %$files) {
+	while (my ($src, $dsts) = each %$files) {
 		my @out;
 		my $perl = $self->perl;
-		foreach(@$to) {
-			next if $self->up_to_date($file, $_);
-			my $fh = new IO::File($_, O_WRONLY|O_CREAT|O_TRUNC, 0777)
-				or die "$_: $!\n";
+		foreach my $dst (@$dsts) {
+			my $base = File::Basename::basename($dst);
+			my $to = File::Spec->catfile($script, $base);
+
+			next if $self->up_to_date($src, $to);
+			my $fh = new IO::File($to, O_WRONLY|O_CREAT|O_TRUNC, 0777)
+				or die "$to: $!\n";
 			push @out, $fh;
 			$fh->binmode;
 			$fh->print("#! $perl\n\n")
-				or die "$_: $!\n";
+				or die "$to: $!\n";
 		}
 		next unless @out;
-		my $in = new IO::File($file, O_RDONLY)
-			or die "$file: $!\n";
+		my $in = new IO::File($src, O_RDONLY)
+			or die "$src: $!\n";
 		$in->binmode;
 		while(<$in>) {
 			foreach my $fh (@out) {
@@ -40,7 +46,6 @@ sub process_pl_files {
 			$fh->close
 				or die "can't close: $!\n";
 		}
-		$self->add_to_cleanup(@$to);
 	}
 }
 
