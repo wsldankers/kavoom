@@ -5,6 +5,8 @@ package KavoomBuilder;
 
 use base qw(Module::Build);
 
+use IO::File;
+
 *file_qr = \&Module::Build::Base::file_qr;
 
 sub process_pl_files {
@@ -16,24 +18,26 @@ sub process_pl_files {
 		my $perl = $self->perl;
 		foreach(@$to) {
 			next if $self->up_to_date($file, $_);
-			open my $fh, '>:raw', $_
+			my $fh = new IO::File($_, O_WRONLY|O_CREAT|O_TRUNC, 0777)
 				or die "$_: $!\n";
 			push @out, $fh;
-			print $fh, "#! $perl\n\n"
+			$fh->binmode;
+			$fh->print("#! $perl\n\n")
 				or die "$_: $!\n";
 		}
 		next unless @out;
-		open my $in, '<:raw', $file
+		my $in = new IO::File($file, O_RDONLY)
 			or die "$file: $!\n";
+		$in->binmode;
 		while(<$in>) {
 			foreach my $fh (@out) {
-				print $fh, $_
+				$fh->print($_)
 					or die "can't write: $!\n";
 			}
 		}
-		close $in;
+		$in->close;
 		foreach my $fh (@out) {
-			close $fh
+			$fh->close
 				or die "can't close: $!\n";
 		}
 		$self->add_to_cleanup(@$to);
