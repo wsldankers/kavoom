@@ -14,17 +14,23 @@ sub process_pl_files {
 	my $files = $self->find_pl_files;
 
 	my $script = File::Spec->catdir($self->blib, 'script');
+	my $tmpdir = File::Spec->catdir($self->blib, 'tmp');
 	File::Path::mkpath($script);
+	File::Path::mkpath($tmpdir);
   
 	while (my ($src, $dsts) = each %$files) {
 		my @out;
+		my @names;
 		my $perl = $self->perl;
 		foreach my $dst (@$dsts) {
 			my $base = File::Basename::basename($dst);
 			my $to = File::Spec->catfile($script, $base);
-
 			next if $self->up_to_date($src, $to);
-			my $fh = new IO::File($to, O_WRONLY|O_CREAT|O_TRUNC, 0777)
+
+			print STDERR "Building $src -> $to\n";
+			push @names, $base;
+			my $tmp = File::Spec->catfile($tmpdir, $base);
+			my $fh = new IO::File($tmp, O_WRONLY|O_CREAT|O_TRUNC, 0777)
 				or die "$to: $!\n";
 			push @out, $fh;
 			$fh->binmode;
@@ -45,6 +51,12 @@ sub process_pl_files {
 		foreach my $fh (@out) {
 			$fh->close
 				or die "can't close: $!\n";
+		}
+		foreach my $base (@names) {
+			my $to = File::Spec->catfile($script, $base);
+			my $tmp = File::Spec->catfile($tmpdir, $base);
+			rename($tmp, $to)
+				or die "rename($tmp, $to): $!\n";
 		}
 	}
 }
