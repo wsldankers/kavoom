@@ -17,7 +17,7 @@ sub process_pl_files {
 	my $tmpdir = File::Spec->catdir($self->blib, 'tmp');
 	File::Path::mkpath($script);
 	File::Path::mkpath($tmpdir);
-  
+
 	while (my ($src, $dsts) = each %$files) {
 		my @out;
 		my @names;
@@ -64,7 +64,7 @@ sub process_pl_files {
 sub find_pl_files {
 	my $self = shift;
 	my $files = $self->{properties}{pl_files};
-    if(UNIVERSAL::isa($files, 'ARRAY')) {
+	if(UNIVERSAL::isa($files, 'ARRAY')) {
 		return {
 			map {$_, [/^(.*)\.pl$/]}
 			map $self->localize_file_path($_),
@@ -81,7 +81,7 @@ sub find_pl_files {
 	} elsif(defined $files) {
 		die "'pl_files' must be a hash reference or array reference";
 	}
-  
+
 	return unless -d 'script';
 	return {
 		map {$_, [/^(.*)\.pl$/i]} @{
