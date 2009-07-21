@@ -18,6 +18,26 @@ field 'disks' => [];
 field 'nics' => [];
 field 'args';
 
+sub huge() {
+	our $huge;
+	unless(defined $huge) {
+		$huge = '';
+		eval {
+			open my $mtab, '/proc/mounts'
+				or die;
+			while(<$mtab>) {
+				chomp;
+				my @fields = split;
+				$huge = $fields[1]
+					if $fields[2] eq 'hugetlbfs';
+			}
+			close $mtab;
+		};
+	}
+
+	return $huge;
+}
+
 sub new {
 	my $name = $_[0];
 	die unless defined $name;
@@ -66,6 +86,10 @@ sub new {
 		monitor => "unix:$rundir/$name.monitor,server,nowait",
 		pidfile => "$rundir/$name.pid"
 	};
+
+	my $huge = huge();
+	$args->{'mem-path'} = $huge
+		if $huge ne '';
 
 	$self = super(name => $name, id => $id, args => $args);
 }

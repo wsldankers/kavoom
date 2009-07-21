@@ -82,6 +82,12 @@ my %commands = (
 		my $cmd = $kvm->command;
 		run (@$cmd, @_);
 	},
+	command => sub {
+		my $kvm = &kvm;
+		my $cmd = $kvm->sh;
+		print "$cmd\n"
+			or die $!;
+	},
 	serial => sub {
 		my $kvm = &kvm;
 		my $exp = $kvm->serial;
