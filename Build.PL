@@ -3,9 +3,9 @@
 use strict;
 use warnings FATAL => 'all';
 
-use ScriptBuilder;
+use Script::Build;
 
-my $build = new ScriptBuilder(
+my $build = new Script::Build(
 	module_name => 'KVM::Kavoom',
 	dist_version => '1.0',
 	dist_abstract => 'Manage KVM instances',
