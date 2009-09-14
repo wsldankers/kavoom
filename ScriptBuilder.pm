@@ -6,22 +6,62 @@ package ScriptBuilder;
 use base qw(Module::Build);
 
 use IO::File;
+use File::Spec::Functions qw(catdir);
 
 *file_qr = \&Module::Build::Base::file_qr;
+
+sub installation_prefix {
+	my $self = shift;
+	return $self->install_base if defined $self->install_base;
+	return $self->prefix if defined $self->prefix;
+	return $self->original_prefix->{$self->installdirs};
+}
+
+sub _set_install_paths {
+	my $self = shift;
+
+	my $ret = $self->SUPER::_set_install_paths(@_);
+
+	my $props = $self->{properties};
+	my $config = $self->{config};
+
+	my $install_sets = $props->{install_sets};
+	while(my ($installtype, $installdirs) = each(%$install_sets)) {
+		my $infix = $installtype eq 'core' ? '' : $installtype;
+		my $prefix = $self->original_prefix->{$installtype};
+		my $confdir = catdir($prefix eq '/usr' ? '/' : $prefix, 'etc')
+			if defined $prefix;
+		$installdirs->{conf} = $config->get("install${infix}conf") || $confdir
+			unless exists $installdirs->{conf};
+	}
+	unless(exists $props->{install_base_relpaths}{conf}) {
+		$props->{install_base_relpaths}{conf} = ['etc']
+	}
+	my $prefix_relpaths = $props->{prefix_relpaths};
+	while(my ($installtype, $installdirs) = each(%$prefix_relpaths)) {
+		$installdirs->{conf} = ['etc']
+			unless exists $installdirs->{conf};
+	}
+	
+	return $ret;
+}
 
 sub process_pl_files {
 	my $self = shift;
 	my $files = $self->find_pl_files;
 
-	my $script = File::Spec->catdir($self->blib, 'script');
-	my $tmpdir = File::Spec->catdir($self->blib, 'tmp');
+	my $perl = $self->perl;
+	my $prefix = $self->installation_prefix();
+	my $sysconfdir = $self->install_destination('conf');
+
+	my $script = catdir($self->blib, 'script');
+	my $tmpdir = catdir($self->blib, 'tmp');
 	File::Path::mkpath($script);
 	File::Path::mkpath($tmpdir);
 
 	while (my ($src, $dsts) = each %$files) {
 		my @out;
 		my @names;
-		my $perl = $self->perl;
 		foreach my $dst (@$dsts) {
 			my $base = File::Basename::basename($dst);
 			my $to = File::Spec->catfile($script, $base);
@@ -34,8 +74,16 @@ sub process_pl_files {
 				or die "$to: $!\n";
 			push @out, $fh;
 			$fh->binmode;
-			$fh->print("#! $perl\n\n")
+			$fh->print("#! $perl\n\nmy \$prefix = '$prefix';\n")
 				or die "$to: $!\n";
+			if(defined $sysconfdir) {
+				$fh->print("my \$sysconfdir = '$sysconfdir';\n\n")
+					or die "$to: $!\n";
+			} else {
+				$fh->print("my \$sysconfdir;\n\n")
+					or die "$to: $!\n";
+				warn "\$sysconfdir not defined\n";
+			}
 		}
 		next unless @out;
 		my $in = new IO::File($src, O_RDONLY)
