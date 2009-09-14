@@ -9,6 +9,7 @@ my $build = new ScriptBuilder(
 	module_name => 'KVM::Kavoom',
 	dist_version => '1.0',
 	dist_abstract => 'Manage KVM instances',
+	dist_author => 'Wessel Dankers <wsl@fruit.je>',
 	license => 'perl',
 	create_makefile_pl => 'small'
 );
