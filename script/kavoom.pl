@@ -76,6 +76,28 @@ sub bg {
 	die;
 }
 
+my %tried;
+my @tried;
+my $configfile;
+
+foreach("$ENV{HOME}/.kavoomrc", "/etc/kavoom.cfg", "/usr/local/etc/kavoom.cfg", "$sysconfdir/kavoom.cfg", "$prefix/etc/kavoom.cfg") {
+	next if exists $tried{$_};
+	undef $tried{$_};
+	push @tried, $_;
+	next unless -e;
+	unless(-r _) {
+		warn "Skipping unreadable $_\n";
+		next;
+	}
+	$configfile = $_;
+	last;
+}
+
+die "Can't find a configuration file. Tried:\n". map { "\t$_\n" } @tried
+	unless defined $configfile;
+
+KVM::Kavoom::configure($configfile);
+
 my %commands = (
 	start => sub {
 		my $kvm = &kvm;

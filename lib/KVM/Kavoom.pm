@@ -8,9 +8,34 @@ use Spiffy -Base;
 use IO::Socket::UNIX;
 use Expect;
 
-our $configdir = '/etc/kavoom';
-our $statedir = '/var/lib/kavoom';
-our $rundir = '/var/run/kavoom';
+our $configdir;
+our $statedir;
+our $rundir;
+
+sub configure() {
+	my $file = shift;
+
+	my %paths = (
+		configdir => \$configdir,
+		statedir => \$statedir,
+		rundir => \$rundir,
+	);
+
+	open CFG, '<:utf8', $file
+		or die "$file: $!\n";
+
+	while(<CFG>) {
+		next if /^\s*($|#)/;
+		my ($key, $val) = split('=', $_, 2);
+		die "Malformed line at $file:$.\n"
+			unless defined $val;
+		trim($key, $val);
+
+		die "Unknown configuration key '$key' at $file:$.\n"
+			unless exists $paths{$key};
+		${$paths{$key}} = $val
+	}
+}
 
 field 'name';
 field 'id';
@@ -41,6 +66,10 @@ sub huge() {
 sub new {
 	my $name = $_[0];
 	die unless defined $name;
+
+	die unless defined $configdir;
+	die unless defined $statedir;
+	die unless defined $rundir;
 
 	my $id;
 	if(open ID, '<', "$statedir/$name.id") {
