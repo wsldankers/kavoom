@@ -141,7 +141,9 @@ our %keys; @keys{qw(mem cpus mac vnc boot disk drive)} = ();
 
 sub mem {
 	my $args = $self->args;
-	$args->{m} = int($_[0])
+	my $mem = int($_[0]);
+	$mem -= 22 if exists $args->{'mem-path'};
+	$args->{m} = $mem
 }
 
 sub cpus {
