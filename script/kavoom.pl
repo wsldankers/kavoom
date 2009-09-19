@@ -80,7 +80,11 @@ my %tried;
 my @tried;
 my $configfile;
 
-foreach("$ENV{HOME}/.kavoomrc", "/etc/kavoom.cfg", "/usr/local/etc/kavoom.cfg", "$sysconfdir/kavoom.cfg", "$prefix/etc/kavoom.cfg") {
+$ENV{HOME} = '/nonexistent'
+	unless defined $ENV{HOME};
+
+foreach("$ENV{HOME}/.kavoomrc", "$sysconfdir/kavoom.cfg", "$prefix/etc/kavoom.cfg", "/etc/kavoom.cfg", "/usr/local/etc/kavoom.cfg") {
+	next unless defined;
 	next if exists $tried{$_};
 	undef $tried{$_};
 	push @tried, $_;
