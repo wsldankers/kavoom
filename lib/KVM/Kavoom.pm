@@ -85,6 +85,8 @@ sub new {
 			$seq = int($line);
 			close SEQ or die;
 		} else {
+			die "$statedir/.seq: $!\n"
+				unless $!{ENOENT};
 			$seq = 0;
 		}
 		$id = $seq++;
