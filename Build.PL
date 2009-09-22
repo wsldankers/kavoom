@@ -14,5 +14,4 @@ my $build = new Script::Build(
 	license => 'perl',
 	create_makefile_pl => 'small'
 );
-$build->add_build_element('pl');
 $build->create_build_script;

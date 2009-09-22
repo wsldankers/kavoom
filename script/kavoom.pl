@@ -80,10 +80,18 @@ my %tried;
 my @tried;
 my $configfile;
 
-$ENV{HOME} = '/nonexistent'
-	unless defined $ENV{HOME};
+sub concat {
+	return undef if grep !defined, @_;
+	return join('/', @_);
+}
 
-foreach("$ENV{HOME}/.kavoomrc", "$sysconfdir/kavoom.cfg", "$prefix/etc/kavoom.cfg", "/etc/kavoom.cfg", "/usr/local/etc/kavoom.cfg") {
+foreach(
+			concat($ENV{HOME}, '.kavoomrc'),
+			concat($DIR{conf}, 'kavoom.cfg'),
+			concat($DIR{root}, 'kavoom.cfg'),
+			'/etc/kavoom.cfg',
+			'/usr/local/etc/kavoom.cfg'
+		) {
 	next unless defined;
 	next if exists $tried{$_};
 	undef $tried{$_};
