@@ -1,3 +1,7 @@
+1.2
+	Don't b0rk if $HOME is not set
+	Specify configuration file through $KAVOOMRC
+
 1.1
 	Make paths configurable
 
