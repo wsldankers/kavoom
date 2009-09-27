@@ -103,6 +103,7 @@ sub concat {
 }
 
 foreach(
+			$ENV{KAVOOMRC},
 			concat($ENV{HOME}, '.kavoomrc'),
 			concat($DIR{conf}, 'kavoom.cfg'),
 			concat($DIR{root}, 'kavoom.cfg'),
@@ -127,7 +128,7 @@ die "Can't find a configuration file. Tried:\n". map { "\t$_\n" } @tried
 
 KVM::Kavoom::configure($configfile);
 
-=head2 commands
+=head1 COMMANDS
 
 =over
 
@@ -215,7 +216,8 @@ documentation.
 
 Try to shut the instance down gracefully, by sending a ctrl-alt-delete to
 it. This obviously will not work unless the guest OS interprets this as a
-shutdown command (the default linux console will just start a reboot).
+shutdown command (the default linux console will just start a reboot, which
+is not sufficient).
 
 =cut
 
@@ -248,6 +250,10 @@ in the guest will be lost.
 	},
 );
 
+=back
+
+=cut
+
 my $what = shift @ARGV;
 die "kavoom: no command specified\n" unless defined $what;
 my $lwhat = lc $what;
@@ -263,17 +269,133 @@ if($@) {
 	exit 0;
 }
 
+=head1 PATHS
+
+The main configuration file for kavoom describes the paths where kavoom
+looks for everything else. Its syntax is C<key = value> (spaces optional).
+Kavoom will look for this file in several locations, in this order:
+
+=over
+
+=item C<$KAVOOMRC>
+
+=item F<~/.kavoomrc>
+
+=item I<confdir>F</kavoom.cfg>
+
+=item I<prefix>F</etc/kavoom.cfg>
+
+=item F</etc/kavoom.cfg>
+
+=item F</usr/local/etc/kavoom.cfg>
+
+=back
+
+Where I<prefix> and I<confdir> are as specified while building kavoom.
+
+The following paths can be set:
+
+=over
+
+=item C<configdir> = I<path>
+
+Directory to look for files describing each KVM instance.
+Usually F</etc/kavoom>.
+
+=item C<statedir> = I<path>
+
+Where kavoom keeps its data, such as per-vm sequence numbers.
+Usually F</var/lib/kavoom>.
+
+=item C<rundir> = I<path>
+
+Where kavoom stores pidfiles and sockets.
+Usually F</var/run/kavoom>.
+
+=back
+
+=head1 CONFIGURATION
+
+Kavoom instances are configured by files in I<configdir>/I<instance>.cfg,
+where I<configdir> is usually just F</etc/kavoom>. Its format is a series
+of C<key = value> pairs (spaces optional). Configurable items are:
+
+=over
+
+=item C<mem> = I<size in mebibytes>
+
+Memory allocated to the VM. If Linux hugepages are available, they will be
+used.
+
+=item C<cpus> = I<number>
+
+Number of CPUs allocated to the VM.
+
+=item C<mac> = I<xx>:I<xx>:I<xx>:I<xx>:I<xx>:I<xx>
+
+Allocates a TUN/TAP interface to the VM with the specified MAC address.
+Multiple ethernet devices can be created by adding additional C<mac =>
+lines.
+
+The bridge that these devices will be connected to, can be configured in
+C</etc/kvm-ifup> (or C</etc/kvm/kvm-ifup>, depending on how kvm is
+installed).
+
+=item C<vnc> = I<yes>/I<no>
+
+Whether to allocate a VNC socket. You can also add or remove such a socket
+later using the C<monitor> command.
+
+=item C<disk> = I<block device>
+
+Add a disk image, which will show up in the guest as a PATA disk. You can
+specify this parameter as often as you like, to add more disk devices.
+
+=item C<drive> = I<drivespec>
+
+Add a device using custom QEMU options. See the C<-drive> option in the
+QEMU manpage for its syntax.
+
+=back
+
+=head1 EXAMPLE
+
+Sample configuration file:
+
+ mem = 1024
+ disk = /dev/vg/foobar
+ mac = 00:16:3e:c8:37:e0
+
+Sample session:
+
+ # kavoom start foobar
+ # kavoom monitor foobar sum 435783 33
+ 20681
+ # kavoom monitor foobar 
+ Escape character is '^]'.
+ QEMU 0.9.1 monitor - type 'help' for more information
+ (qemu) info balloon
+ balloon: actual=1024
+ (qemu) ^]
+ # kavoom serial foobar
+ Escape character is '^]'.
+
+ Debian GNU/Linux 5.0 foobar ttyS0
+
+ foobar login: ^]
+ #
+
 =head1 AUTHOR
 
 Wessel Dankers <wsl@fruit.je>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2009 Wessel Dankers <wsl@fruit.je>
+Copyright (c) 2009 Wessel Dankers <L<wsl@fruit.je|mailto:wsl@fruit.je>>
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-kvm(1), qemu(1)
+L<kvm(1)>, L<qemu(1)>
