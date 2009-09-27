@@ -139,7 +139,7 @@ sub bool() {
 	return $_[1];
 }
 
-our %keys; @keys{qw(mem cpus mac vnc boot disk drive)} = ();
+our %keys; @keys{qw(mem cpus mac vnc disk drive)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -164,14 +164,13 @@ sub vnc {
 	$args->{vnc} = bool($_[0]) ? ":$id" : 'none'
 }
 
-sub disk {
-	my $disks = $self->disks;
-	push @$disks, "media=disk,file=$_[0],cache=off"
-}
-
 sub drive {
 	my $disks = $self->disks;
 	push @$disks, $_[0]
+}
+
+sub disk {
+	$self->drive("media=disk,file=$_[0],cache=off")
 }
 
 sub config {
