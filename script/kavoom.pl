@@ -6,23 +6,6 @@ use POSIX qw(_exit setsid :sys_wait_h);
 use IO::Handle;
 use KVM::Kavoom;
 
-=head1 NAME
-
-kavoom - Manage KVM instances
-
-=head1 SYNOPSIS
-
-C<kavoom> I<command> I<instance>
-
-=head1 DESCRIPTION
-
-Kavoom manages instances of the Linux KVM virtual machine. It allows you to
-start and stop KVM processes, access its serial port and to use the QEMU
-monitor. The monitor can be used both interactively and using one-off
-commands in a way suitable for scripting.
-
-=cut
-
 sub kvm {
 	my $name = shift;
 	die "missing kvm name\n" unless defined $name;
@@ -128,48 +111,18 @@ die "Can't find a configuration file. Tried:\n". map { "\t$_\n" } @tried
 
 KVM::Kavoom::configure($configfile);
 
-=head1 COMMANDS
-
-=over
-
-=cut
-
 my %commands = (
-
-=item C<kavoom> C<start> I<instance>
-
-Start a KVM instance, as described in its configuration file.
-For the format of the configuration file, see below.
-
-=cut
-
 	start => sub {
 		my $kvm = &kvm;
 		my $cmd = $kvm->command;
 		run (@$cmd, @_);
 	},
-
-=item C<kavoom> C<command> I<instance>
-
-Print the command as it would be executed by the C<start> command.
-
-=cut
-
 	command => sub {
 		my $kvm = &kvm;
 		my $cmd = $kvm->sh;
 		print "$cmd\n"
 			or die $!;
 	},
-
-=item C<kavoom> C<serial> I<instance>
-
-Get access to the serial console of an already running instance.
-You can leave the serial console by typing C<^]> (control + right angle
-bracket).
-
-=cut
-
 	serial => sub {
 		my $kvm = &kvm;
 		my $exp = $kvm->serial;
@@ -179,21 +132,6 @@ bracket).
 		$exp->interact(\*STDIN, "");
 		print "\n";
 	},
-
-=item C<kavoom> C<monitor> I<instance> [I<monitor command>]
-
-Without arguments, gives access to the interactive QEMU console (kvm is
-based on QEMU, so the command set is the same).
-You can leave the monitor by typing C<^]> (control + right angle bracket).
-
-If arguments are given to the monitor command, they are input into the QEMU
-monitor as a command and kavoom will wait until the prompt returns.
-
-For information on the commands available in the QEMU console, see the QEMU
-documentation.
-
-=cut
-
 	monitor => sub {
 		my $kvm = &kvm;
 		my $exp = $kvm->monitor;
@@ -211,16 +149,6 @@ documentation.
 			print "\n";
 		}
 	},
-
-=item C<kavoom> C<shutdown> I<instance>
-
-Try to shut the instance down gracefully, by sending a ctrl-alt-delete to
-it. This obviously will not work unless the guest OS interprets this as a
-shutdown command (the default linux console will just start a reboot, which
-is not sufficient).
-
-=cut
-
 	shutdown => sub {
 		my $kvm = &kvm;
 		my $exp = $kvm->monitor;
@@ -231,14 +159,6 @@ is not sufficient).
 		$exp->expect(1, -ex => "\n") or die "timeout\n";
 		$exp->expect(60, -ex => 'No mr Bond, I expect you to die!');
 	},
-
-=item C<kavoom> C<destroy> I<instance>
-
-Destroy a KVM instance by ending the process. Any unsaved or unsynced data
-in the guest will be lost.
-
-=cut
-
 	destroy => sub {
 		my $kvm = &kvm;
 		my $exp = $kvm->monitor;
@@ -249,10 +169,6 @@ in the guest will be lost.
 		$exp->expect(60, -ex => 'No mr Bond, I expect you to die!');
 	},
 );
-
-=back
-
-=cut
 
 my $what = shift @ARGV;
 die "kavoom: no command specified\n" unless defined $what;
@@ -268,6 +184,68 @@ if($@) {
 } else {
 	exit 0;
 }
+
+__END__
+
+=head1 NAME
+
+kavoom - Manage KVM instances
+
+=head1 SYNOPSIS
+
+C<kavoom> I<command> I<instance>
+
+=head1 DESCRIPTION
+
+Kavoom manages instances of the Linux KVM virtual machine. It allows you to
+start and stop KVM processes, access its serial port and to use the QEMU
+monitor. The monitor can be used both interactively and using one-off
+commands in a way suitable for scripting.
+
+=head1 COMMANDS
+
+=over
+
+=item C<kavoom> C<start> I<instance>
+
+Start a KVM instance, as described in its configuration file.
+For the format of the configuration file, see below.
+
+=item C<kavoom> C<command> I<instance>
+
+Print the command as it would be executed by the C<start> command.
+
+=item C<kavoom> C<serial> I<instance>
+
+Get access to the serial console of an already running instance.
+You can leave the serial console by typing C<^]> (control + right angle
+bracket).
+
+=item C<kavoom> C<monitor> I<instance> [I<monitor command>]
+
+Without arguments, gives access to the interactive QEMU console (kvm is
+based on QEMU, so the command set is the same).
+You can leave the monitor by typing C<^]> (control + right angle bracket).
+
+If arguments are given to the monitor command, they are input into the QEMU
+monitor as a command and kavoom will wait until the prompt returns.
+
+For information on the commands available in the QEMU console, see the QEMU
+documentation.
+
+=item C<kavoom> C<shutdown> I<instance>
+
+Try to shut the instance down gracefully, by sending a ctrl-alt-delete to
+it. This obviously will not work unless the guest OS interprets this as a
+shutdown command (the default linux console will just start a reboot, which
+is not sufficient).
+
+=item C<kavoom> C<destroy> I<instance>
+
+Destroy a KVM instance by ending the process. Any unsaved or unsynced data
+in the guest will be lost.
+
+=back
 
 =head1 PATHS
 
