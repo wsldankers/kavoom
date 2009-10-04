@@ -112,7 +112,7 @@ sub new {
 		name => $name,
 		vnc => 'none',
 		daemonize => undef,
-		no-acpi => undef,
+		'no-acpi' => undef,
 		usbdevice => 'tablet',
 #		monitor => 'tcp:localhost:'.(4000+$id).',server,nowait,nodelay',
 		serial => "unix:$rundir/$name.serial,server,nowait",
