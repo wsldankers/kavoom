@@ -111,6 +111,8 @@ sub new {
 	my $args = {
 		name => $name,
 		vnc => 'none',
+		daemonize => undef,
+		no-acpi => undef,
 		usbdevice => 'tablet',
 #		monitor => 'tcp:localhost:'.(4000+$id).',server,nowait,nodelay',
 		serial => "unix:$rundir/$name.serial,server,nowait",
@@ -195,14 +197,16 @@ sub config {
 }
 
 sub command {
-	my @cmd = qw(kvm -daemonize);
+	my @cmd = qw(kvm);
 
 	my $name = $self->name;
 	my $id = $self->id;
 
 	my $args = $self->args;
 	while(my ($key, $val) = each(%$args)) {
-		push @cmd, "-$key", $val;
+		push @cmd, "-$key";
+		push @cmd, $val
+			if defined $val;
 	}
 
 	my $nics = $self->nics;
