@@ -106,7 +106,7 @@ foreach(
 	last;
 }
 
-die "Can't find a configuration file. Tried:\n". map { "\t$_\n" } @tried
+die "Can't find a configuration file. Tried:\n".join('', map {"\t$_\n"} @tried)
 	unless defined $configfile;
 
 KVM::Kavoom::configure($configfile);
