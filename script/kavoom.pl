@@ -89,7 +89,7 @@ foreach(
 			$ENV{KAVOOMRC},
 			concat($ENV{HOME}, '.kavoomrc'),
 			concat($DIR{conf}, 'kavoom.cfg'),
-			concat($DIR{root}, 'kavoom.cfg'),
+			concat($DIR{root}, 'etc', 'kavoom.cfg'),
 			'/etc/kavoom.cfg',
 			'/usr/local/etc/kavoom.cfg'
 		) {
