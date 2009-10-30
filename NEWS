@@ -1,3 +1,7 @@
+1.4
+	Add option so that you can disable omitting -no-acpi unless
+	you explicitly do not need it.
+
 1.3
 	Documentation (kavoom manpage)
 	Add -no-acpi by default

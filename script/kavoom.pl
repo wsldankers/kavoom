@@ -324,6 +324,10 @@ installed).
 Whether to allocate a VNC socket. You can also add or remove such a socket
 later using the C<monitor> command.
 
+=item C<acpi> = I<yes>/I<no>
+
+Whether to enable ACPI on this VM.
+
 =item C<disk> = I<block device>
 
 Add a disk image, which will show up in the guest as a PATA disk. You can
