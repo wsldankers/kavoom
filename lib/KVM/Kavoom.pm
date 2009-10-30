@@ -141,7 +141,7 @@ sub bool() {
 	return $_[1];
 }
 
-our %keys; @keys{qw(mem cpus mac vnc disk drive)} = ();
+our %keys; @keys{qw(mem cpus mac vnc disk drive acpi)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -173,6 +173,15 @@ sub drive {
 
 sub disk {
 	$self->drive("media=disk,file=$_[0],cache=off")
+}
+
+sub acpi {
+	my $args = $self->args;
+	if(bool($_[0])) {
+		delete $args->{'no-acpi'};
+	} else {
+		undef $args->{'no-acpi'};
+	}
 }
 
 sub config {
