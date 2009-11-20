@@ -269,7 +269,7 @@ Kavoom will look for this file in several locations, in this order:
 
 =back
 
-Where I<prefix> and I<confdir> are as specified while building kavoom.
+where I<prefix> and I<confdir> are as specified while building kavoom.
 
 The following paths can be set:
 
