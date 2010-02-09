@@ -1,3 +1,6 @@
+1.5
+	ACPI enabled by default (no -no-acpi).
+
 1.4
 	Add option so that you can disable omitting -no-acpi unless
 	you explicitly do not need it.

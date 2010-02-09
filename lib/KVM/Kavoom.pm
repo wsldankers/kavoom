@@ -112,9 +112,7 @@ sub new {
 		name => $name,
 		vnc => 'none',
 		daemonize => undef,
-		'no-acpi' => undef,
 		usbdevice => 'tablet',
-#		monitor => 'tcp:localhost:'.(4000+$id).',server,nowait,nodelay',
 		serial => "unix:$rundir/$name.serial,server,nowait",
 		monitor => "unix:$rundir/$name.monitor,server,nowait",
 		pidfile => "$rundir/$name.pid"
@@ -136,8 +134,8 @@ sub trim() {
 
 sub bool() {
 	local $_ = $_[0];
-	return 1 if /^([yjt]|(on|1)$)/;
-	return 0 if /^([nf]|(off|0)$)/;
+	return 1 if /^([yjt]|(on|1)$)/i;
+	return 0 if /^([nf]|(off|0)$)/i;
 	return $_[1];
 }
 
