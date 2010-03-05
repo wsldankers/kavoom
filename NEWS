@@ -1,3 +1,7 @@
+1.6
+	kavoom shutdown now sends an ACPI powerdown event
+	instead of the (mostly useless) ctrl-alt-del.
+
 1.5
 	ACPI enabled by default (no -no-acpi).
 

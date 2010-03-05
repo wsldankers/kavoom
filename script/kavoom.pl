@@ -155,7 +155,7 @@ my %commands = (
 		my $name = $kvm->name;
 		return unless $exp;
 		$exp->expect(1, -re => '^\(qemu\) ') or die "timeout\n";
-		$exp->print("sendkey ctrl-alt-delete\n");
+		$exp->print("system_powerdown\n");
 		$exp->expect(1, -ex => "\n") or die "timeout\n";
 		$exp->expect(60, -ex => 'No mr Bond, I expect you to die!');
 	},
@@ -235,10 +235,8 @@ documentation.
 
 =item C<kavoom> C<shutdown> I<instance>
 
-Try to shut the instance down gracefully, by sending a ctrl-alt-delete to
-it. This obviously will not work unless the guest OS interprets this as a
-shutdown command (the default linux console will just start a reboot, which
-is not sufficient).
+Try to shut the instance down gracefully, by sending an ACPI powerbutton
+event.
 
 =item C<kavoom> C<destroy> I<instance>
 
