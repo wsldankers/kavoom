@@ -4,7 +4,8 @@ use utf8;
 
 package KVM::Kavoom;
 
-use Spiffy -Base;
+use Clarity -self;
+use IO::File;
 use IO::Socket::UNIX;
 use Expect;
 
@@ -21,42 +22,46 @@ sub configure() {
 		rundir => \$rundir,
 	);
 
-	open CFG, '<:utf8', $file
+	my $cfg = new IO::File($file, '<:utf8')
 		or die "$file: $!\n";
 
-	while(<CFG>) {
+	while(defined(local $_ = $cfg->getline)) {
 		next if /^\s*($|#)/;
 		my ($key, $val) = split('=', $_, 2);
 		die "Malformed line at $file:$.\n"
 			unless defined $val;
 		trim($key, $val);
 
-		die "Unknown configuration key '$key' at $file:$.\n"
+		die "Unknown configuration key '$key' at $file:@{[$cfg->input_line_number]}\n"
 			unless exists $paths{$key};
 		${$paths{$key}} = $val
 	}
 }
 
-field 'name';
-field 'id';
-field 'disks' => [];
-field 'nics' => [];
-field 'args';
+field name;
+field id;
+field disks => [];
+field nics => [];
+field args;
+field extra => [];
+field nictype => 'e1000';
+field disktype => 'ide';
+field cache => 'off';
 
 sub huge() {
 	our $huge;
 	unless(defined $huge) {
 		$huge = '';
 		eval {
-			open my $mtab, '/proc/mounts'
+			my $mtab = new IO::File('/proc/mounts', '<')
 				or die;
-			while(<$mtab>) {
+			while(defined(local $_ = $mtab->getline)) {
 				chomp;
 				my @fields = split;
 				$huge = $fields[1]
 					if $fields[2] eq 'hugetlbfs';
 			}
-			close $mtab;
+			$mtab->close;
 		};
 	}
 
@@ -139,7 +144,7 @@ sub bool() {
 	return $_[1];
 }
 
-our %keys; @keys{qw(mem cpus mac vnc disk drive acpi)} = ();
+our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio cache)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -165,12 +170,15 @@ sub vnc {
 }
 
 sub drive {
-	my $disks = $self->disks;
-	push @$disks, $_[0]
+	my ($p) = map { s/^file=// ? $_ : () } split(',', $_[0]);
+	die "Can't parse deprecated drive= statement\n"
+		unless $p;
+	$self->disk($p);
+	warn "WARNING: interpreting deprecated drive=$_[0] as disk=$p\n";
 }
 
 sub disk {
-	$self->drive("media=disk,file=$_[0],cache=off")
+	push @{$self->disks}, $_[0];
 }
 
 sub acpi {
@@ -182,25 +190,43 @@ sub acpi {
 	}
 }
 
+sub virtio {
+	my $args = $self->args;
+	if(bool($_[0])) {
+		$self->nictype('virtio');
+		$self->disktype('virtio');
+	} else {
+		delete $self->{nictype};
+		delete $self->{disktype};
+	}
+}
+
 sub config {
 	my $name = $self->name;
-	my $cfg = @_ ? $_[0] : "$configdir/$name.cfg";
-	open CFG, '<', $cfg
-		or die "Can't open $cfg: $!\n";
+	my $file = @_ ? $_[0] : "$configdir/$name.cfg";
 
-	while(<CFG>) {
+	my $cfg = new IO::File($file, '<')
+		or die "Can't open $file: $!\n";
+
+	while(defined(local $_ = $cfg->getline)) {
 		next if /^\s*($|#)/;
-		my ($key, $val) = split('=', $_, 2);
-		die "Malformed line at $cfg:$.\n"
-			unless defined $val;
-		trim($key, $val);
-		my $lkey = lc $key;
-		die "unknown configuration parameter at $cfg:$.: $key\n"
-			unless exists $keys{$lkey};
-		$self->$lkey($val);
+		trim($_);
+		if(ord == 45) { # -
+			my ($key, $val) = split(' ', $_, 2);
+			my $extra = $self->extra;
+			push @$extra, $key;
+			push @$extra, $val if defined $val;
+		} else {
+			my ($key, $val) = split('=', $_, 2);
+			die "Malformed line at $cfg:$.\n"
+				unless defined $val;
+			trim($key, $val);
+			my $lkey = lc $key;
+			die "unknown configuration parameter at $file:@{[$cfg->input_line_number]}: $key\n"
+				unless exists $keys{$lkey};
+			$self->$lkey($val);
+		}
 	}
-
-	close CFG or die;
 }
 
 sub command {
@@ -217,22 +243,25 @@ sub command {
 	}
 
 	my $nics = $self->nics;
+	my $nictype = $self->nictype;
 	my $i = 0;
 	foreach my $mac (@$nics) {
 		push @cmd,
 			'-net', "tap,vlan=$i,ifname=$name$i",
-#			'-net', "nic,vlan=$i,macaddr=$mac";
-			'-net', "nic,vlan=$i,model=e1000,macaddr=$mac";
-#			'-net', "nic,vlan=$i,model=virtio,macaddr=$mac";
+			'-net', "nic,vlan=$i,model=$nictype,macaddr=$mac";
 		$i++;
 	}
 	push @cmd, '-net', 'none'
 		unless $i;
 
 	my $disks = $self->disks;
+	my $disktype = $self->disktype;
+	my $cache = $self->cache;
 	foreach my $disk (@$disks) {
-		push @cmd, '-drive', $disk;
+		push @cmd, '-drive', "file=$disk,if=$disktype,cache=$cache";
 	}
+
+	push @cmd, @{$self->extra};
 
 	return \@cmd;
 }
