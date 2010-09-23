@@ -333,10 +333,33 @@ specify this parameter as often as you like, to add more disk devices.
 
 =item C<drive> = I<drivespec>
 
-Add a device using custom QEMU options. See the C<-drive> option in the
-QEMU manpage for its syntax.
+Deprecated. Consider using C<-drive> instead.
+
+=item C<virtio> = I<yes>/I<no>
+
+Use virtio for all disks and network interfaces. Your guest OS needs to
+support this.
+
+You will also need a BIOS version that supports this, or you will be unable
+to boot. SeaBIOS 0.6.0+git20100710 and up have this support.
+See the C<-bios> flag in the kvm manpage.
+
+=item C<cache> = I<writeback>/I<writethrough>/I<off>
+
+Set the caching policy for all disks. Using I<writeback> is unsafe but
+fast. Useful when installing the OS.
+
+The default policy is I<off> which is probably only suitable for enterprise
+class disk hardware. Use I<writethrough> on commodity disks.
 
 =back
+
+You can also specify kvm command line options directly, one per line.
+Any options thus given are appended to the command line when starting
+kvm. For example:
+
+ -cdrom /tmp/debian-netinst.iso
+ -no-reboot
 
 =head1 EXAMPLE
 
