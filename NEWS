@@ -1,3 +1,12 @@
+2.1
+	Only enable USB tablet if VNC was enabled (saves CPU)
+
+2.0
+	Allow adding configuration parameters to the config file;
+	drive= deprecated; use -drive for manual control.
+	virtio=true enables virtio for network and disk;
+	cache=writeback|writethrough|off tunes disk caching policy.
+
 1.6
 	kavoom shutdown now sends an ACPI powerdown event
 	instead of the (mostly useless) ctrl-alt-del.

@@ -117,7 +117,6 @@ sub new {
 		name => $name,
 		vnc => 'none',
 		daemonize => undef,
-		usbdevice => 'tablet',
 		serial => "unix:$rundir/$name.serial,server,nowait",
 		monitor => "unix:$rundir/$name.monitor,server,nowait",
 		pidfile => "$rundir/$name.pid"
@@ -144,7 +143,7 @@ sub bool() {
 	return $_[1];
 }
 
-our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio cache)} = ();
+our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio cache tablet)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -167,6 +166,14 @@ sub vnc {
 	my $id = $self->id;
 	my $args = $self->args;
 	$args->{vnc} = bool($_[0]) ? ":$id" : 'none'
+}
+
+sub tablet {
+	return $self->{tablet} = bool($_[0])
+		if $@;
+	return exists $self->{tablet}
+		? $self->{tablet}
+		: $self->args->{vnc} ne 'none';
 }
 
 sub drive {
@@ -242,6 +249,9 @@ sub command {
 			if defined $val;
 	}
 
+	push @cmd, -usbdevice => 'tablet'
+		if $self->tablet;
+
 	my $nics = $self->nics;
 	my $nictype = $self->nictype;
 	my $i = 0;
@@ -251,14 +261,14 @@ sub command {
 			'-net', "nic,vlan=$i,model=$nictype,macaddr=$mac";
 		$i++;
 	}
-	push @cmd, '-net', 'none'
+	push @cmd, -net => 'none'
 		unless $i;
 
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
 	my $cache = $self->cache;
 	foreach my $disk (@$disks) {
-		push @cmd, '-drive', "file=$disk,if=$disktype,cache=$cache";
+		push @cmd, -drive => "file=$disk,if=$disktype,cache=$cache";
 	}
 
 	push @cmd, @{$self->extra};

@@ -322,6 +322,12 @@ installed).
 Whether to allocate a VNC socket. You can also add or remove such a socket
 later using the C<monitor> command.
 
+=item C<tablet> = I<yes>/I<no>
+
+Whether to allocate a USB tablet device. You can also add or remove such a
+device later using the C<monitor> command. Defaults to I<yes> if a VNC
+socket was allocated, otherwise I<no>.
+
 =item C<acpi> = I<yes>/I<no>
 
 Whether to enable ACPI on this VM.
