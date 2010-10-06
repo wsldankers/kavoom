@@ -257,8 +257,8 @@ sub command {
 	my $i = 0;
 	foreach my $mac (@$nics) {
 		push @cmd,
-			'-net', "tap,vlan=$i,ifname=$name$i",
-			'-net', "nic,vlan=$i,model=$nictype,macaddr=$mac";
+			-net => "tap,vlan=$i,ifname=$name$i",
+			-net => "nic,vlan=$i,model=$nictype,macaddr=$mac";
 		$i++;
 	}
 	push @cmd, -net => 'none'
@@ -267,8 +267,10 @@ sub command {
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
 	my $cache = $self->cache;
+	my $boot = ',boot=on';
 	foreach my $disk (@$disks) {
-		push @cmd, -drive => "file=$disk,if=$disktype,cache=$cache";
+		push @cmd, -drive => "file=$disk,if=$disktype,cache=$cache$boot";
+		$boot = '';
 	}
 
 	push @cmd, @{$self->extra};

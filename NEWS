@@ -1,3 +1,6 @@
+2.2
+	Enable boot=on for the first disk.
+
 2.1
 	Only enable USB tablet if VNC was enabled (saves CPU)
 
