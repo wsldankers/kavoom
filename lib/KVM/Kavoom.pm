@@ -147,9 +147,7 @@ our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio cache tablet)} = ();
 
 sub mem {
 	my $args = $self->args;
-	my $mem = int($_[0]);
-	$mem -= 22 if exists $args->{'mem-path'};
-	$args->{m} = $mem
+	$args->{m} = int($_[0]);
 }
 
 sub cpus {
