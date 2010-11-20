@@ -1,3 +1,6 @@
+2.3
+	Remove memory size hack
+
 2.2
 	Enable boot=on for the first disk.
 
