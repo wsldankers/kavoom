@@ -46,7 +46,8 @@ field args;
 field extra => [];
 field nictype => 'e1000';
 field disktype => 'ide';
-field cache => 'off';
+field cache => undef;
+field aio => undef;
 
 sub huge() {
 	our $huge;
@@ -143,7 +144,7 @@ sub bool() {
 	return $_[1];
 }
 
-our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio cache tablet)} = ();
+our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio aio cache tablet)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -234,6 +235,21 @@ sub config {
 	}
 }
 
+sub keyval() {
+	my @args;
+	while(@_) {
+		my $key = shift;
+		my $val = shift;
+		if(defined $val) {
+			$val =~ s/,/,,/g;
+			push @args, "$key=$val";
+		} else {
+			push @args, $key;
+		}
+	}
+	return join(',', @args);
+}
+
 sub command {
 	my @cmd = qw(kvm);
 
@@ -255,8 +271,8 @@ sub command {
 	my $i = 0;
 	foreach my $mac (@$nics) {
 		push @cmd,
-			-net => "tap,vlan=$i,ifname=$name$i",
-			-net => "nic,vlan=$i,model=$nictype,macaddr=$mac";
+			-net => keyval(tap => undef, vlan => $i, ifname => $name.$i),
+			-net => keyval(nic => undef, vlan => $i, model => $nictype, macaddr => $mac);
 		$i++;
 	}
 	push @cmd, -net => 'none'
@@ -264,11 +280,23 @@ sub command {
 
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
-	my $cache = $self->cache;
-	my $boot = ',boot=on';
+	undef $i;
 	foreach my $disk (@$disks) {
-		push @cmd, -drive => "file=$disk,if=$disktype,cache=$cache$boot";
-		$boot = '';
+		my $cache = $self->cache;
+		my $aio = $self->aio;
+		die "No such file or directory: $disk\n" unless -e $disk;
+		if(-b _) {
+			$cache //= 'none';
+			$aio //= 'native';
+		}
+		my %opt;
+		$opt{cache} = $cache
+			if defined $cache;
+		$opt{aio} = $aio
+			if defined $aio;
+		$opt{boot} = 'on'
+			unless $i++;
+		push @cmd, -drive => keyval(file => $disk, if => $disktype, %opt);
 	}
 
 	push @cmd, @{$self->extra};

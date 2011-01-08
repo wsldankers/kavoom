@@ -339,24 +339,31 @@ specify this parameter as often as you like, to add more disk devices.
 
 =item C<drive> = I<drivespec>
 
-Deprecated. Consider using C<-drive> instead.
+Deprecated. If you need precise control over the disk parameters, use
+C<-drive> instead. Otherwise, use C<disk>.
 
 =item C<virtio> = I<yes>/I<no>
 
 Use virtio for all disks and network interfaces. Your guest OS needs to
 support this.
 
-You will also need a BIOS version that supports this, or you will be unable
-to boot. SeaBIOS 0.6.0+git20100710 and up have this support.
-See the C<-bios> flag in the kvm manpage.
-
 =item C<cache> = I<writeback>/I<writethrough>/I<off>
 
 Set the caching policy for all disks. Using I<writeback> is unsafe but
 fast. Useful when installing the OS.
 
-The default policy is I<off> which is probably only suitable for enterprise
-class disk hardware. Use I<writethrough> on commodity disks.
+The default policy is to use I<off> when the backend is a block device
+(recommended) and to leave it to kvm otherwise (at the time of writing,
+kvm uses I<writethrough> by default).
+
+=item C<aio> = I<native>/I<threads>
+
+Set the aio (asynchronous I/O) method for all disks.
+
+The default policy is to use I<native> when the backend is a block device
+(recommended) and to leave it to kvm otherwise (at the time of writing,
+kvm uses I<threads> by default). Please note that if the caching policy
+is not set to I<off>, kvm may choose to fall back to using I<threads>.
 
 =back
 
@@ -369,7 +376,7 @@ kvm. For example:
 
 =head1 EXAMPLE
 
-Sample configuration file:
+Sample configuration file (I<foobar.cfg>):
 
  mem = 1024
  disk = /dev/vg/foobar
