@@ -1,3 +1,12 @@
+2.4
+	Update documentation.
+	Add aio= setting.
+	Defaults for aio and cache now take backend type (file,
+	block device) into consideration.
+	Force file type to raw for block devices.
+	Do not generate IDs for non-existent vm's.
+	Remove timeout on monitor command.
+
 2.3
 	Remove memory size hack
 
