@@ -138,10 +138,10 @@ my %commands = (
 		my $name = $kvm->name;
 		die "virtual machine $name not running.\n" unless $exp;
 		if(@_) {
-			$exp->expect(1, -re => '^\(qemu\) ') or die "timeout\n";
+			$exp->expect(2, -re => '^\(qemu\) ') or die "timeout\n";
 			$exp->print(join(' ', @_)."\n");
-			$exp->expect(1, -ex => "\n") or die "timeout\n";
-			$exp->expect(60, -re => '^\(qemu\) ') or die "timeout\n";
+			$exp->expect(2, -ex => "\n") or die "timeout\n";
+			$exp->expect(undef, -re => '^\(qemu\) ') or die "timeout\n";
 			print $exp->before;
 		} else {
 			print STDERR "Escape character is '^]'.\n";
@@ -154,9 +154,9 @@ my %commands = (
 		my $exp = $kvm->monitor;
 		my $name = $kvm->name;
 		return unless $exp;
-		$exp->expect(1, -re => '^\(qemu\) ') or die "timeout\n";
+		$exp->expect(2, -re => '^\(qemu\) ') or die "timeout\n";
 		$exp->print("system_powerdown\n");
-		$exp->expect(1, -ex => "\n") or die "timeout\n";
+		$exp->expect(2, -ex => "\n") or die "timeout\n";
 		$exp->expect(60, -ex => 'No mr Bond, I expect you to die!');
 	},
 	destroy => sub {
@@ -164,7 +164,7 @@ my %commands = (
 		my $exp = $kvm->monitor;
 		my $name = $kvm->name;
 		return unless $exp;
-		$exp->expect(1, -re => '^\(qemu\) ') or die "timeout\n";
+		$exp->expect(2, -re => '^\(qemu\) ') or die "timeout\n";
 		$exp->print("quit\n");
 		$exp->expect(60, -ex => 'No mr Bond, I expect you to die!');
 	},
@@ -175,9 +175,7 @@ die "kavoom: no command specified\n" unless defined $what;
 my $lwhat = lc $what;
 die "kavoom: unknown command '$what'\n" unless exists $commands{$lwhat};
 
-eval {
-	$commands{$lwhat}(@ARGV);
-};
+eval { $commands{$lwhat}(@ARGV) };
 if($@) {
 	print STDERR "kavoom $what: $@";
 	exit 1;
@@ -336,6 +334,9 @@ Whether to enable ACPI on this VM.
 
 Add a disk image, which will show up in the guest as a PATA disk. You can
 specify this parameter as often as you like, to add more disk devices.
+
+A block device will be interpreted as a "raw" image, a file will be
+interpreted as qcow2 format.
 
 =item C<drive> = I<drivespec>
 

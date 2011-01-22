@@ -39,10 +39,8 @@ sub configure() {
 }
 
 field name;
-field id;
 field disks => [];
 field nics => [];
-field args;
 field extra => [];
 field nictype => 'e1000';
 field disktype => 'ide';
@@ -56,7 +54,8 @@ sub huge() {
 		eval {
 			my $mtab = new IO::File('/proc/mounts', '<')
 				or die;
-			while(defined(local $_ = $mtab->getline)) {
+			local $_;
+			while(defined($_ = $mtab->getline)) {
 				chomp;
 				my @fields = split;
 				$huge = $fields[1]
@@ -70,49 +69,19 @@ sub huge() {
 }
 
 sub new {
-	my $name = $_[0];
+	my $name = shift;
 	die unless defined $name;
 
 	die unless defined $configdir;
 	die unless defined $statedir;
 	die unless defined $rundir;
 
-	my $id;
-	if(open ID, '<', "$statedir/$name.id") {
-		my $line = <ID>;
-		chomp $line;
-		$id = int($line);
-		close ID or die;
-	} else {
-		my $seq;
-		if(open SEQ, '<', "$statedir/.seq") {
-			my $line = <SEQ>;
-			chomp $line;
-			$seq = int($line);
-			close SEQ or die;
-		} else {
-			die "$statedir/.seq: $!\n"
-				unless $!{ENOENT};
-			$seq = 0;
-		}
-		$id = $seq++;
+	$self = super(name => $name);
+}
 
-		open SEQ, '>', "$statedir/.seq,new"
-			or die "Can't open $statedir/.seq,new for writing: $!\n";
-		print SEQ "$seq\n" or die;
-		close SEQ or die;
-
-		open ID, '>', "$statedir/$name.id,new"
-			or die "Can't open $statedir/$name.id,new for writing: $!\n";
-		print ID "$id\n" or die;
-		close ID or die;
-
-		rename "$statedir/.seq,new", "$statedir/.seq"
-			or die "Can't rename $statedir/.seq,new to $statedir/.seq: $!\n";
-		rename "$statedir/$name.id,new", "$statedir/$name.id"
-			or die "Can't rename $statedir/$name.id,new to $statedir/$name.id: $!\n";
-	}
-	die unless defined $id;
+field args => sub {
+	my $self = shift;
+	my $name = $self->name;
 
 	my $args = {
 		name => $name,
@@ -127,8 +96,59 @@ sub new {
 	$args->{'mem-path'} = $huge
 		if $huge ne '';
 
-	$self = super(name => $name, id => $id, args => $args);
-}
+	return $args;
+};
+
+field id => sub {
+	my $self = shift;
+	my $name = $self->name;
+
+	if(my $idfile = new IO::File("$statedir/$name.id", '<')) {
+		my $line = $idfile->getline;
+		chomp $line;
+		die "Can't parse pid '$line' from $statedir/$name.id\n"
+			unless $line =~ /^(?:0|[1-9]\d*)$/;
+		$idfile->close or die;
+		return int($line);
+	}
+
+	die "$statedir/$name.id: $!\n"
+		unless $!{ENOENT};
+
+	my $seq;
+	if(my $seqfile = new IO::File("$statedir/.seq", '<')) {
+		my $line = $seqfile->getline;
+		chomp $line;
+		$seq = int($line);
+		$seqfile->close or die;
+	} else {
+		die "$statedir/.seq: $!\n"
+			unless $!{ENOENT};
+		$seq = 0;
+	}
+	my $id = $seq++;
+
+	my $seqfile = new IO::File("$statedir/.seq", '>')
+		or die "Can't open $statedir/.seq,new for writing: $!\n";
+	$seqfile->write("$seq\n") or die "$statedir/.seq,new: $!\n";
+	$seqfile->flush or die "$statedir/.seq,new: $!\n";
+	$seqfile->sync or die "$statedir/.seq,new: $!\n";
+	$seqfile->close or die "$statedir/.seq,new: $!\n";
+
+	my $idfile = new IO::File("$statedir/$name.id,new", '>')
+		or die "Can't open $statedir/$name.id,new for writing: $!\n";
+	$idfile->write("$id\n") or die "$statedir/$name.id,new: $!\n";
+	$idfile->flush or die "$statedir/$name.id,new: $!\n";
+	$idfile->sync or die "$statedir/$name.id,new: $!\n";
+	$idfile->close or die "$statedir/$name.id,new: $!\n";
+
+	rename "$statedir/.seq,new", "$statedir/.seq"
+		or die "Can't rename $statedir/.seq,new to $statedir/.seq: $!\n";
+	rename "$statedir/$name.id,new", "$statedir/$name.id"
+		or die "Can't rename $statedir/$name.id,new to $statedir/$name.id: $!\n";
+
+	return $id;
+};
 
 sub trim() {
 	foreach(@_) {
@@ -144,7 +164,7 @@ sub bool() {
 	return $_[1];
 }
 
-our %keys; @keys{qw(mem cpus mac vnc disk drive acpi virtio aio cache tablet)} = ();
+our %keys; @keys{qw(mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -284,18 +304,16 @@ sub command {
 	foreach my $disk (@$disks) {
 		my $cache = $self->cache;
 		my $aio = $self->aio;
+		my %opt;
 		die "No such file or directory: $disk\n" unless -e $disk;
 		if(-b _) {
 			$cache //= 'none';
 			$aio //= 'native';
+			$opt{format} = 'raw';
 		}
-		my %opt;
-		$opt{cache} = $cache
-			if defined $cache;
-		$opt{aio} = $aio
-			if defined $aio;
-		$opt{boot} = 'on'
-			unless $i++;
+		$opt{cache} = $cache if defined $cache;
+		$opt{aio} = $aio if defined $aio;
+		$opt{boot} = 'on' unless $i++;
 		push @cmd, -drive => keyval(file => $disk, if => $disktype, %opt);
 	}
 
