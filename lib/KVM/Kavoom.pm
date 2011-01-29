@@ -128,7 +128,7 @@ field id => sub {
 	}
 	my $id = $seq++;
 
-	my $seqfile = new IO::File("$statedir/.seq", '>')
+	my $seqfile = new IO::File("$statedir/.seq,new", '>')
 		or die "Can't open $statedir/.seq,new for writing: $!\n";
 	$seqfile->write("$seq\n") or die "$statedir/.seq,new: $!\n";
 	$seqfile->flush or die "$statedir/.seq,new: $!\n";
