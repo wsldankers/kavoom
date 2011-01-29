@@ -114,6 +114,9 @@ KVM::Kavoom::configure($configfile);
 my %commands = (
 	start => sub {
 		my $kvm = &kvm;
+		my $name = $kvm->name;
+		die "virtual machine $name already running\n"
+			if $kvm->running;
 		my $cmd = $kvm->command;
 		run (@$cmd, @_);
 	},
@@ -125,18 +128,22 @@ my %commands = (
 	},
 	serial => sub {
 		my $kvm = &kvm;
-		my $exp = $kvm->serial;
 		my $name = $kvm->name;
-		die "virtual machine $name not running.\n" unless $exp;
+		die "virtual machine $name not running.\n"
+			unless $kvm->running;
+		my $exp = $kvm->serial
+			or die "can't connect to serial port of $name.\n";
 		print STDERR "Escape character is '^]'.\n";
 		$exp->interact(\*STDIN, "");
 		print "\n";
 	},
 	monitor => sub {
 		my $kvm = &kvm;
-		my $exp = $kvm->monitor;
 		my $name = $kvm->name;
-		die "virtual machine $name not running.\n" unless $exp;
+		die "virtual machine $name not running.\n"
+			unless $kvm->running;
+		my $exp = $kvm->monitor
+			or die "can't connect to monitor of $name.\n";
 		if(@_) {
 			$exp->expect(2, -re => '^\(qemu\) ') or die "timeout\n";
 			$exp->print(join(' ', @_)."\n");
@@ -151,6 +158,7 @@ my %commands = (
 	},
 	shutdown => sub {
 		my $kvm = &kvm;
+		return unless $kvm->running;
 		my $exp = $kvm->monitor;
 		my $name = $kvm->name;
 		return unless $exp;
@@ -161,12 +169,25 @@ my %commands = (
 	},
 	destroy => sub {
 		my $kvm = &kvm;
+		return unless $kvm->running;
 		my $exp = $kvm->monitor;
 		my $name = $kvm->name;
 		return unless $exp;
 		$exp->expect(2, -re => '^\(qemu\) ') or die "timeout\n";
 		$exp->print("quit\n");
 		$exp->expect(60, -ex => 'No mr Bond, I expect you to die!');
+	},
+	started => sub {
+		my $kvm = &kvm;
+		exit($kvm->running ? 0 : 1);
+	},
+	stopped => sub {
+		my $kvm = &kvm;
+		exit($kvm->running ? 1 : 0);
+	},
+	configtest => sub {
+		my $kvm = &kvm;
+		$kvm->command;
 	},
 );
 
@@ -240,6 +261,21 @@ event.
 
 Destroy a KVM instance by ending the process. Any unsaved or unsynced data
 in the guest will be lost.
+
+=item C<kavoom> C<started> I<instance>
+
+Silently checks whether the instance is running. Returns a non-zero
+exit code if and only if the instance is not running or an error occurred.
+
+=item C<kavoom> C<stopped> I<instance>
+
+Silently checks whether the instance is stopped. Returns a non-zero
+exit code if and only if the instance is still running or an error occurred.
+
+=item C<kavoom> C<configtest> I<instance>
+
+Test the configuration for this instance. Returns a zero exit code
+if and only if no errors were encountered.
 
 =back
 

@@ -7,6 +7,7 @@ package KVM::Kavoom;
 use Clarity -self;
 use IO::File;
 use IO::Socket::UNIX;
+use Fcntl;
 use Expect;
 
 our $configdir;
@@ -268,6 +269,15 @@ sub keyval() {
 		}
 	}
 	return join(',', @args);
+}
+
+sub running {
+	my $name = $self->name;
+	my $fh = new IO::File("$rundir/$name.pid", '+<');
+	return undef unless $fh;
+	return undef if fcntl($fh, F_SETLK, pack('ssQQl', F_WRLCK, SEEK_CUR));
+	return 1 if $!{EAGAIN};
+	die "fcntl($rundir/$name.pid, F_SETLK): $!\n";
 }
 
 sub command {
