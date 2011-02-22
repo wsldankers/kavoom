@@ -159,37 +159,37 @@ sub trim() {
 }
 
 sub bool() {
-	local $_ = $_[0];
+	local $_ = shift;
 	return 1 if /^([yjt]|(on|1)$)/i;
 	return 0 if /^([nf]|(off|0)$)/i;
-	return $_[1];
+	return shift;
 }
 
 our %keys; @keys{qw(mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
 
 sub mem {
 	my $args = $self->args;
-	$args->{m} = int($_[0]);
+	$args->{m} = int(shift);
 }
 
 sub cpus {
 	my $args = $self->args;
-	$args->{smp} = int($_[0])
+	$args->{smp} = int(shift);
 }
 
 sub mac {
 	my $nics = $self->nics;
-	push @$nics, $_[0]
+	push @$nics, shift;
 }
 
 sub vnc {
 	my $id = $self->id;
 	my $args = $self->args;
-	$args->{vnc} = bool($_[0]) ? ":$id" : 'none'
+	$args->{vnc} = bool(shift) ? ":$id" : 'none'
 }
 
 sub tablet {
-	return $self->{tablet} = bool($_[0])
+	return $self->{tablet} = bool(shift)
 		if $@;
 	return exists $self->{tablet}
 		? $self->{tablet}
@@ -197,20 +197,21 @@ sub tablet {
 }
 
 sub drive {
-	my ($p) = map { s/^file=// ? $_ : () } split(',', $_[0]);
+	my $drive = shift;
+	my ($p) = map { s/^file=// ? $_ : () } split(',', $drive);
 	die "Can't parse deprecated drive= statement\n"
 		unless $p;
 	$self->disk($p);
-	warn "WARNING: interpreting deprecated drive=$_[0] as disk=$p\n";
+	warn "WARNING: interpreting deprecated drive=$drive as disk=$p\n";
 }
 
 sub disk {
-	push @{$self->disks}, $_[0];
+	push @{$self->disks}, shift;
 }
 
 sub acpi {
 	my $args = $self->args;
-	if(bool($_[0])) {
+	if(bool(shift)) {
 		delete $args->{'no-acpi'};
 	} else {
 		undef $args->{'no-acpi'};
@@ -219,18 +220,20 @@ sub acpi {
 
 sub virtio {
 	my $args = $self->args;
-	if(bool($_[0])) {
+	if(bool(shift)) {
 		$self->nictype('virtio');
 		$self->disktype('virtio');
+		$args->{balloon} = 'virtio';
 	} else {
 		delete $self->{nictype};
 		delete $self->{disktype};
+		delete $args->{balloon};
 	}
 }
 
 sub config {
 	my $name = $self->name;
-	my $file = @_ ? $_[0] : "$configdir/$name.cfg";
+	my $file = @_ ? shift : "$configdir/$name.cfg";
 
 	my $cfg = new IO::File($file, '<')
 		or die "Can't open $file: $!\n";
