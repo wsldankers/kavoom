@@ -6,6 +6,8 @@ use POSIX qw(_exit setsid :sys_wait_h);
 use IO::Handle;
 use KVM::Kavoom;
 
+my $exit_status;
+
 sub kvm {
 	my $name = shift;
 	die "missing kvm name\n" unless defined $name;
@@ -18,14 +20,17 @@ sub handle_status {
 	my $prog = join(' ', @_);
 	if(WIFEXITED($?)) {
 		my $status = WEXITSTATUS($?);
-		die sprintf("%s exited with status %d\n", $prog, $status)
-			if $status;
+		$exit_status = $status;
+		return undef unless $status;
+		return sprintf("%s exited with status %d\n", $prog, $status)
 	} elsif(WIFSIGNALED($?)) {
 		my $sig = WTERMSIG($?);
-		die sprintf("%s killed with signal %d%s\n", $prog, $sig & 127, ($sig & 128) ? ' (core dumped)' : '')
+		$exit_status = $sig;
+		return sprintf("%s killed with signal %d%s\n", $prog, $sig & 127, ($sig & 128) ? ' (core dumped)' : '')
 	} elsif(WIFSTOPPED($?)) {
 		my $sig = WSTOPSIG($?);
-		warn sprintf("%s stopped with signal %d\n", $prog, $sig)
+		$exit_status = $sig;
+		return sprintf("%s stopped with signal %d\n", $prog, $sig)
 	}
 }
 
@@ -34,46 +39,7 @@ sub run {
 	if((system $prog @_) == -1) {
 		die sprintf("running %s: %s\n", join(' ', @_), $!);
 	}
-	handle_status(@_);
-}
-
-sub detonate {
-	my $fh = shift;
-	print $fh join(': ', @_)."\n";
-	close($fh);
-	_exit(2);
-}
-
-sub bg {
-	my $pid = fork();
-	die "fork(): $!\n" unless defined $pid;
-	if($pid) {
-		waitpid($pid, 0);
-		handle_status(@_);
-		return;
-	}
-
-	open my $err, '>&', *STDERR{IO}
-		or die "can't dup STDERR: $!\n";
-
-	chdir '/'
-		or detonate($err, "Can't chdir to /", $!);
-	open STDIN, '<:raw', '/dev/null'
-		or detonate($err, "Can't open /dev/null", $!);
-	open STDOUT, '>:raw', '/dev/null'
-		or detonate($err, "Can't open /dev/null", $!);
-	open STDERR, '>:raw', '/dev/null'
-		or detonate($err, "Can't open /dev/null", $!);
-
-	my $daemon = fork();
-	detonate($err, "fork()", $!) unless defined $daemon;
-	_exit(0) if $daemon;
-
-	detonate($err, 'setsid()', $!) if setsid() == -1;
-	my $prog = $_[0];
-	eval { exec $prog @_ };
-	detonate($err, 'exec('.join(' ', @_).')', $!);
-	die;
+	return handle_status($prog);
 }
 
 my %tried;
@@ -118,7 +84,10 @@ my %commands = (
 		die "virtual machine $name already running\n"
 			if $kvm->running;
 		my $cmd = $kvm->command;
-		run (@$cmd, @_);
+		my $status = run(@$cmd, @_);
+		if($status) {
+			die $status;
+		}
 	},
 	command => sub {
 		my $kvm = &kvm;
@@ -179,11 +148,11 @@ my %commands = (
 	},
 	started => sub {
 		my $kvm = &kvm;
-		exit($kvm->running ? 0 : 1);
+		$exit_status = $kvm->running ? 0 : 1;
 	},
 	stopped => sub {
 		my $kvm = &kvm;
-		exit($kvm->running ? 1 : 0);
+		$exit_status = $kvm->running ? 1 : 0;
 	},
 	configtest => sub {
 		my $kvm = &kvm;
@@ -199,10 +168,10 @@ die "kavoom: unknown command '$what'\n" unless exists $commands{$lwhat};
 eval { $commands{$lwhat}(@ARGV) };
 if($@) {
 	print STDERR "kavoom $what: $@";
-	exit 1;
-} else {
-	exit 0;
+	$exit_status ||= -1;
 }
+
+exit $exit_status;
 
 __END__
 
