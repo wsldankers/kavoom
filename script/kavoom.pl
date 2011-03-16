@@ -22,24 +22,32 @@ sub handle_status {
 		my $status = WEXITSTATUS($?);
 		$exit_status = $status;
 		return undef unless $status;
-		return sprintf("%s exited with status %d\n", $prog, $status)
+		die sprintf("%s exited with status %d\n", $prog, $status)
 	} elsif(WIFSIGNALED($?)) {
 		my $sig = WTERMSIG($?);
 		$exit_status = $sig;
-		return sprintf("%s killed with signal %d%s\n", $prog, $sig & 127, ($sig & 128) ? ' (core dumped)' : '')
+		die sprintf("%s killed with signal %d%s\n", $prog, $sig & 127, ($sig & 128) ? ' (core dumped)' : '')
 	} elsif(WIFSTOPPED($?)) {
 		my $sig = WSTOPSIG($?);
 		$exit_status = $sig;
-		return sprintf("%s stopped with signal %d\n", $prog, $sig)
+		die sprintf("%s stopped with signal %d\n", $prog, $sig)
 	}
 }
 
 sub run {
-	my $prog = $_[0];
+	my $prog = shift;
 	if((system $prog @_) == -1) {
-		die sprintf("running %s: %s\n", join(' ', @_), $!);
+		die sprintf("running %s: %s\n", $prog, $!);
 	}
-	return handle_status($prog);
+	return handle_status(shift);
+}
+
+sub run_shell {
+	my $cmd = shift;
+	if((system($cmd)) == -1) {
+		die sprintf("running %s: %s\n", $cmd, $!);
+	}
+	return handle_status("'$cmd'");
 }
 
 my %tried;
@@ -83,11 +91,14 @@ my %commands = (
 		my $name = $kvm->name;
 		die "virtual machine $name already running\n"
 			if $kvm->running;
-		my $cmd = $kvm->command;
-		my $status = run(@$cmd, @_);
-		if($status) {
-			die $status;
+		if(my $prepare = $kvm->prepare) {
+			local $ENV{kavoom_id} = $kvm->id;
+			local $ENV{kavoom_pid} = $$;
+			local $ENV{kavoom_name} = $kvm->name;
+			run_shell($prepare);
 		}
+		my $cmd = $kvm->command;
+		run(@$cmd, @_);
 	},
 	command => sub {
 		my $kvm = &kvm;
@@ -289,7 +300,16 @@ Usually F</var/lib/kavoom>.
 =item C<rundir> = I<path>
 
 Where kavoom stores pidfiles and sockets.
-Usually F</var/run/kavoom>.
+
+=item C<command> = I<path>
+
+The executable kavoom will invoke when starting kvm.
+Usually F</usr/bin/kvm> or F<kvm>.
+
+=item C<prepare> = I<path>
+
+An (optional) shell command line that will be invoked just before kvm is started.
+It is possible to override this command in individual vm configurations.
 
 =back
 
@@ -370,6 +390,19 @@ The default policy is to use I<native> when the backend is a block device
 (recommended) and to leave it to kvm otherwise (at the time of writing,
 kvm uses I<threads> by default). Please note that if the caching policy
 is not set to I<off>, kvm may choose to fall back to using I<threads>.
+
+=item C<kvm> = I<path to kvm>
+
+The path to the kvm executable to use for starting this VM.
+
+=item C<prepare> = I<shell command line>
+
+Command to start just prior to launching kvm. The following environment
+variable will be available:
+
+=over 
+
+=item 
 
 =back
 

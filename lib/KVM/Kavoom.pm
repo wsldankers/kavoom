@@ -13,6 +13,8 @@ use Expect;
 our $configdir;
 our $statedir;
 our $rundir;
+our $command = 'kvm';
+our $prepare;
 
 sub configure() {
 	my $file = shift;
@@ -21,6 +23,8 @@ sub configure() {
 		configdir => \$configdir,
 		statedir => \$statedir,
 		rundir => \$rundir,
+		command => \$command,
+		prepare => \$prepare,
 	);
 
 	my $cfg = new IO::File($file, '<:utf8')
@@ -165,7 +169,7 @@ sub bool() {
 	return shift;
 }
 
-our %keys; @keys{qw(mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
+our %keys; @keys{qw(kvm prepare mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -231,6 +235,22 @@ sub virtio {
 	}
 }
 
+sub kvm {
+	if(@_) {
+		return $self->{kvm} = shift;
+	} else {
+		return $self->{kvm} // $command;
+	}
+}
+
+sub prepare {
+	if(@_) {
+		return $self->{prepare} = shift;
+	} else {
+		return $self->{prepare} // $prepare;
+	}
+}
+
 sub config {
 	my $name = $self->name;
 	my $file = @_ ? shift : "$configdir/$name.cfg";
@@ -284,7 +304,7 @@ sub running {
 }
 
 sub command {
-	my @cmd = qw(kvm);
+	my @cmd = ($self->kvm, 'kvm');
 
 	my $name = $self->name;
 	my $id = $self->id;
@@ -337,7 +357,9 @@ sub command {
 
 sub sh {
 	my $cmd = $self->command(@_);
-	return join(' ', map { s|[^A-Z0-9_.,=:+/-]|\\$&|gi; $_ } @$cmd)
+	my $prog = shift @$cmd;
+	shift @$cmd;
+	return join(' ', map { s|[^A-Z0-9_.,=:+/-]|\\$&|gi; $_ } ($prog, @$cmd))
 }
 
 sub socket {
