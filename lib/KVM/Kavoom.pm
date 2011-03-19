@@ -13,8 +13,7 @@ use Expect;
 our $configdir;
 our $statedir;
 our $rundir;
-our $command = 'kvm';
-our $prepare;
+our $kvm = 'kvm';
 
 sub configure() {
 	my $file = shift;
@@ -23,8 +22,7 @@ sub configure() {
 		configdir => \$configdir,
 		statedir => \$statedir,
 		rundir => \$rundir,
-		command => \$command,
-		prepare => \$prepare,
+		kvm => \$kvm,
 	);
 
 	my $cfg = new IO::File($file, '<:utf8')
@@ -169,7 +167,7 @@ sub bool() {
 	return shift;
 }
 
-our %keys; @keys{qw(kvm prepare mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
+our %keys; @keys{qw(kvm mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
 
 sub mem {
 	my $args = $self->args;
@@ -239,15 +237,7 @@ sub kvm {
 	if(@_) {
 		return $self->{kvm} = shift;
 	} else {
-		return $self->{kvm} // $command;
-	}
-}
-
-sub prepare {
-	if(@_) {
-		return $self->{prepare} = shift;
-	} else {
-		return $self->{prepare} // $prepare;
+		return $self->{kvm} // $kvm;
 	}
 }
 
@@ -304,7 +294,7 @@ sub running {
 }
 
 sub command {
-	my @cmd = ($self->kvm, 'kvm');
+	my @cmd = ($self->kvm);
 
 	my $name = $self->name;
 	my $id = $self->id;

@@ -35,19 +35,10 @@ sub handle_status {
 }
 
 sub run {
-	my $prog = shift;
-	if((system $prog @_) == -1) {
-		die sprintf("running %s: %s\n", $prog, $!);
+	if(system(@_) == -1) {
+		die sprintf("running %s: %s\n", shift, $!);
 	}
 	return handle_status(shift);
-}
-
-sub run_shell {
-	my $cmd = shift;
-	if((system($cmd)) == -1) {
-		die sprintf("running %s: %s\n", $cmd, $!);
-	}
-	return handle_status("'$cmd'");
 }
 
 my %tried;
@@ -91,13 +82,9 @@ my %commands = (
 		my $name = $kvm->name;
 		die "virtual machine $name already running\n"
 			if $kvm->running;
-		if(my $prepare = $kvm->prepare) {
-			local $ENV{kavoom_id} = $kvm->id;
-			local $ENV{kavoom_pid} = $$;
-			local $ENV{kavoom_name} = $kvm->name;
-			run_shell($prepare);
-		}
 		my $cmd = $kvm->command;
+		local $ENV{kavoom_id} = $kvm->id;
+		local $ENV{kavoom_name} = $kvm->name;
 		run(@$cmd, @_);
 	},
 	command => sub {
@@ -179,7 +166,7 @@ die "kavoom: unknown command '$what'\n" unless exists $commands{$lwhat};
 eval { $commands{$lwhat}(@ARGV) };
 if($@) {
 	print STDERR "kavoom $what: $@";
-	$exit_status ||= -1;
+	$exit_status ||= 1;
 }
 
 exit $exit_status;
@@ -301,15 +288,12 @@ Usually F</var/lib/kavoom>.
 
 Where kavoom stores pidfiles and sockets.
 
-=item C<command> = I<path>
+=item C<kvm> = I<path>
 
 The executable kavoom will invoke when starting kvm.
 Usually F</usr/bin/kvm> or F<kvm>.
 
-=item C<prepare> = I<path>
-
-An (optional) shell command line that will be invoked just before kvm is started.
-It is possible to override this command in individual vm configurations.
+May be overridden by a vm configuration file.
 
 =back
 
@@ -393,14 +377,12 @@ is not set to I<off>, kvm may choose to fall back to using I<threads>.
 
 =item C<kvm> = I<path to kvm>
 
-The path to the kvm executable to use for starting this VM.
+The path to the kvm executable to use for starting this VM. The following
+environment variables will be available (for use in wrapper scripts):
 
-=item C<prepare> = I<shell command line>
+kavoom_name: the name of the vm being started
 
-Command to start just prior to launching kvm. The following environment
-variable will be available:
-
-=over 
+kavoom_id: the numeric ID of the vm being started
 
 =item 
 
