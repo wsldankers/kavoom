@@ -1,3 +1,6 @@
+2.8
+	Fix undefined $exit_status error message
+
 2.7
 	Allow the command to start kvm to be configured
 
