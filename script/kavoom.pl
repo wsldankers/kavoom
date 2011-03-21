@@ -169,7 +169,7 @@ if($@) {
 	$exit_status ||= 1;
 }
 
-exit $exit_status;
+exit($exit_status // 0);
 
 __END__
 
