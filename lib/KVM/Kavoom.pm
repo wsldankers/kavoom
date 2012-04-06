@@ -54,18 +54,16 @@ sub huge() {
 	our $huge;
 	unless(defined $huge) {
 		$huge = '';
-		eval {
-			my $mtab = new IO::File('/proc/mounts', '<')
-				or die;
-			local $_;
-			while(defined($_ = $mtab->getline)) {
-				chomp;
-				my @fields = split;
-				$huge = $fields[1]
-					if $fields[2] eq 'hugetlbfs';
-			}
-			$mtab->close;
-		};
+		my $mtab = new IO::File('/proc/mounts', '<')
+			or return $huge;
+		local $_;
+		while(defined($_ = $mtab->getline)) {
+			chomp;
+			next if /^\s*#/;
+			next unless /^((?:[^ \t\\]|\\.)+)[ \t]+((?:[^ \t\\]|\\.)+)[ \t]+((?:[^ \t\\]|\\.)+)[ \t]/;
+			$huge = $2 if $3 eq 'hugetlbfs';
+		}
+		$mtab->close;
 	}
 
 	return $huge;
@@ -79,7 +77,7 @@ sub new {
 	die unless defined $statedir;
 	die unless defined $rundir;
 
-	$self = super(name => $name);
+	return super(name => $name);
 }
 
 field args => sub {
@@ -87,7 +85,6 @@ field args => sub {
 	my $name = $self->name;
 
 	my $args = {
-		name => $name,
 		vnc => 'none',
 		daemonize => undef,
 		serial => "unix:$rundir/$name.serial,server,nowait",
@@ -294,7 +291,7 @@ sub running {
 }
 
 sub command {
-	my @cmd = ($self->kvm);
+	my @cmd = ($self->kvm, -name => $self->name);
 
 	my $name = $self->name;
 	my $id = $self->id;
