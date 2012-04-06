@@ -1,0 +1,111 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          kavoom
+# Required-Start:    $syslog $named $network $time
+# Required-Stop:     $syslog $named $network $time
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop kvm
+# Description:       Start and stop KVM virtual machines
+### END INIT INFO
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+kavoom=kavoom
+program=/usr/bin/$kavoom
+stopaction=savestate
+stoporder=parallel
+stagger=3
+gzip='exec gzip --fast'
+zcat='exec zcat -f'
+
+test -x $program || exit 0
+
+if ${KAVOOM_IS_BEING_INSTALLED:-false}
+then
+	echo "Not running init script during install/upgrade." >&2
+	exit 0
+fi
+
+action=$1
+shift
+
+case $# in 0)
+	instances=$(cd /etc/$kavoom && for i in *.cfg; do test -r "$i" && echo "${i%.cfg}";done)
+;; *)
+	instances=$*
+esac
+
+test -r /etc/default/$kavoom && . /etc/default/$kavoom
+
+case $action in start)
+	mkdir -p /var/run/$kavoom
+	echo -n "Starting virtual machines:"
+	none=' (none)'
+	for i in $instances
+	do
+		state=/var/lib/kavoom/$i.state
+		spent=/var/lib/kavoom/$i.spent
+		if $program stopped $i
+		then
+			if [ -r "$state" ]
+			then
+				echo -n " $i(r)"
+				mv "$state" "$spent"
+				sync
+				$program start "$i" -incoming "exec:zcat -f '$spent' /dev/zero 2>/dev/null"
+				sleep $stagger
+				none=
+			elif [ -e "/etc/$kavoom/$i.auto" ]
+			then
+				echo -n " $i"
+				sync
+				$program start "$i"
+				sleep $stagger
+				none=
+			fi
+		fi
+	done
+	echo "$none."
+;; stop)
+	echo -n "Stopping virtual machines:"
+	none=' (none)'
+	for i in $instances
+	do
+		if $program started "$i"
+		then
+			echo -n " $i"
+			none=
+			(
+			set -e
+			case $stopaction in savestate)
+				state=/var/lib/$kavoom/$i.state
+				spent=/var/lib/$kavoom/$i.spent
+				rm -f "$state" "$spent"
+				$program monitor "$i" sendkey alt-sysrq-s
+				sleep 2
+				$program monitor "$i" stop
+				$program monitor "$i" "migrate \"exec:$gzip >'$spent'\"" &&
+					mv "$spent" "$state"
+				$program destroy "$i"
+			;; *)
+				$program shutdown "$i"
+				$program destroy "$i"
+			esac
+			) &
+			case $stoporder in serial)
+				wait
+			;; *)
+				sleep $stagger
+			esac
+		fi
+	done
+	wait
+	echo "$none."
+;; *)
+	echo "Usage: $0 {start|stop}" >&2
+	exit 1
+esac
+
+:

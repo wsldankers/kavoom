@@ -1,0 +1,24 @@
+Source: kavoom
+Section: admin
+Priority: extra
+Maintainer: Wessel Dankers <wsl@fruit.je>
+Build-Depends: cdbs, debhelper (>= 7), libscript-build-perl
+Standards-Version: 3.7.2
+
+Package: kavoom
+Architecture: all
+Depends: perl, qemu-kvm | kvm, libkvm-kavoom-perl (= ${binary:Version})
+Description: Manage KVM instances
+ Manage KVM instances using configuration files and start/stop/monitor
+ commands.
+ .
+ This package provides the kavoom and init.d scripts.
+
+Package: libkvm-kavoom-perl
+Architecture: all
+Depends: perl, libexpect-perl, libclarity-perl
+Description: Manage KVM instances
+ Manage KVM instances using configuration files and start/stop/monitor
+ commands.
+ .
+ This package provides the KVM::Kavoom perl module.

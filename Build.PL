@@ -8,7 +8,7 @@ use Script::Build;
 my $build = new Script::Build(
 	module_name => 'KVM::Kavoom',
 	dist_name => 'kavoom',
-	dist_version => '2.8',
+	dist_version => '2.9',
 	dist_abstract => 'Manage Linux KVM virtual machine instances',
 	dist_author => 'Wessel Dankers <wsl@fruit.je>',
 	license => 'perl',

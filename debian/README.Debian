@@ -1,0 +1,10 @@
+kavoom
+------
+
+Frontend for KVM (http://www.linux-kvm.org).
+
+The debian packaging is maintained in Subversion:
+$Id$
+$URL$
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 14 Sep 2009 19:41:22 +0200

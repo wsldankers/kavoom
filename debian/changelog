@@ -1,0 +1,158 @@
+kavoom (2.9) stable; urgency=low
+
+  * Improve /proc/mounts parsing
+
+  * Put the -name argument first
+
+  * Switch to debian source format 3.0
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 06 Apr 2012 16:03:13 +0200
+
+kavoom (2.8-1) stable; urgency=low
+
+  * Brown paper bag release:
+    - Fix undefined $exit_status error
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 21 Mar 2011 19:24:21 +0100
+
+kavoom (2.7-1) stable; urgency=low
+
+  * New upstream version:
+    - Command to start kvm can now be configured
+
+ -- Wessel Dankers <wsl@fruit.je>  Sat, 19 Mar 2011 16:51:57 +0100
+
+kavoom (2.6-1) stable; urgency=low
+
+  * New upstream version:
+    - Add balloon if virtio is enabled
+
+  * Compress suspended vm's
+
+  * Suspend vm's in parallel
+
+ -- Wessel Dankers <wsl@fruit.je>  Sat, 12 Mar 2011 19:13:53 +0100
+
+kavoom (2.5-1) stable; urgency=low
+
+  * New upstream version:
+    - Check whether a VM is running before trying to start it.
+    - Add started/stopped/configtest commands.
+    - Fix bug in ID generation.
+
+ -- Wessel Dankers <wsl@fruit.je>  Sat, 29 Jan 2011 15:26:36 +0100
+
+kavoom (2.4-1) stable; urgency=low
+
+  * New upstream version:
+    - Add aio= setting.
+    - Defaults for aio and cache now take backend type (file,
+      block device) into consideration.
+    - Update documentation.
+    - Force file type to raw for block devices.
+    - Do not generate IDs for non-existent vm's.
+    - Remove timeout on monitor command.
+
+  * Perform a guest shutdown by default (the save-to-disk mechanism
+    continues to be unstable, despite attempts to fix/workaround).
+    The old mechanism is still available, through /etc/default/kavoom.
+
+ -- Wessel Dankers <wsl@fruit.je>  Sat, 08 Jan 2011 23:07:07 +0100
+
+kavoom (2.3-1) stable; urgency=low
+
+  * New upstream version:
+    - Remove memory size hack.
+
+ -- Wessel Dankers <wsl@fruit.je>  Sat, 20 Nov 2010 14:48:45 +0100
+
+kavoom (2.2-1) stable; urgency=low
+
+  * New upstream version:
+    - Enable boot=on for the first disk.
+
+ -- Wessel Dankers <wsl@fruit.je>  Wed, 06 Oct 2010 13:22:09 +0200
+
+kavoom (2.1-1) stable; urgency=low
+
+  * New upstream version:
+    - Only enable USB tablet if VNC was enabled (saves CPU) 
+
+ -- Wessel Dankers <wsl@fruit.je>  Wed, 06 Oct 2010 10:34:41 +0200
+
+kavoom (2.0-1) stable; urgency=low
+
+  * New upstream version:
+    - allows adding configuration parameters to the config file;
+    - drive= deprecated;
+    - virtio=true enables virtio for network and disk;
+    - cache=writeback|writethrough|off tunes disk caching policy.
+
+ -- Wessel Dankers <wsl@fruit.je>  Thu, 23 Sep 2010 10:12:16 +0200
+
+kavoom (1.6-2) stable; urgency=low
+
+  * Removed hugepages support from init script, if you want hugepages
+    that's better handled through other means.
+
+  * Improved suspend/restore robustness.
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 06 Aug 2010 16:38:12 +0200
+
+kavoom (1.6-1) stable; urgency=low
+
+  * New upstream version:
+    - Send ACPI shutdown event instead of ctrl-alt-del
+      during kavoom shutdown.
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 05 Mar 2010 11:18:56 +0100
+
+kavoom (1.5-1) stable; urgency=low
+
+  * New upstream version:
+    - No more -no-acpi by default
+  * Depend on qemu-kvm | kvm
+
+ -- Wessel Dankers <wsl@fruit.je>  Tue, 09 Feb 2010 15:43:55 +0100
+
+kavoom (1.4-2) stable; urgency=low
+
+  * Add missing postinst.
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 30 Oct 2009 13:25:34 +0100
+
+kavoom (1.4-1) stable; urgency=low
+
+  * New upstream version:
+    - Ability to enable/disable acpi per vm.
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 30 Oct 2009 13:21:01 +0100
+
+kavoom (1.3-1) stable; urgency=low
+
+  * New upstream version:
+    - Documentation (kavoom manpage)
+    - Add -no-acpi by default
+
+ -- Wessel Dankers <wsl@fruit.je>  Sun, 04 Oct 2009 20:04:34 +0200
+
+kavoom (1.2-1) stable; urgency=low
+
+  * New upstream version:
+    - don't b0rk if $HOME is not set
+    - specify configuration file through $KAVOOMRC
+
+ -- Wessel Dankers <wsl@fruit.je>  Thu, 24 Sep 2009 16:23:18 +0200
+
+kavoom (1.1-1) stable; urgency=low
+
+  * New upstream version
+    - configurable paths
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 14 Sep 2009 22:39:53 +0200
+
+kavoom (1.0-1) stable; urgency=low
+
+  * Initial release.
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 14 Sep 2009 19:33:40 +0200

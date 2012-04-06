@@ -1,0 +1,7 @@
+#! /usr/bin/make -f
+
+DEB_PERL_CHECK_FLAGS =
+DEB_PERL_DESTDIR = $(CURDIR)/debian/tmp
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/perl-build.mk
