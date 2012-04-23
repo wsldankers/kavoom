@@ -1,3 +1,8 @@
+2.9
+	Always put -name first on the command line
+	Better mtab parsing
+	Move debian/ dir in-tree
+
 2.8
 	Fix undefined $exit_status error message
 
