@@ -2,8 +2,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          kavoom
-# Required-Start:    $syslog $named $network $time
-# Required-Stop:     $syslog $named $network $time
+# Required-Start:    $remote_fs $syslog $named $network $time qemu-kvm
+# Required-Stop:     $remote_fs $syslog $named $network $time qemu-kvm
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start/stop kvm
