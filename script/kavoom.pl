@@ -192,10 +192,12 @@ commands in a way suitable for scripting.
 
 =over
 
-=item C<kavoom> C<start> I<instance>
+=item C<kavoom> C<start> I<instance> [I<kvm arguments>]
 
 Start a KVM instance, as described in its configuration file.
 For the format of the configuration file, see below.
+
+Any extra arguments to this command are passed verbatim to kvm.
 
 =item C<kavoom> C<command> I<instance>
 
@@ -401,11 +403,11 @@ Sample configuration file (I<foobar.cfg>):
 
  mem = 1024
  disk = /dev/vg/foobar
- mac = 00:16:3e:c8:37:e0
+ mac = 52:54:00:c8:37:e0
 
 Sample session:
 
- # kavoom start foobar
+ # kavoom start foobar -cdrom /tmp/debian-netinst.iso
  # kavoom monitor foobar sum 435783 33
  20681
  # kavoom monitor foobar 
