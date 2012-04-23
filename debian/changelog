@@ -1,3 +1,9 @@
+kavoom (2.10) stable; urgency=low
+
+  * Fix init script dependencies
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 23 Apr 2012 17:45:22 +0200
+
 kavoom (2.9) stable; urgency=low
 
   * Improve /proc/mounts parsing

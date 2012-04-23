@@ -1,3 +1,6 @@
+2.10
+	Fix init script dependencies
+
 2.9
 	Always put -name first on the command line
 	Better mtab parsing
