@@ -49,6 +49,8 @@ field nictype => 'e1000';
 field disktype => 'ide';
 field cache => undef;
 field aio => undef;
+field serialport => 0;
+field kvm => sub { $kvm };
 
 sub huge() {
 	our $huge;
@@ -87,7 +89,6 @@ field args => sub {
 	my $args = {
 		vnc => 'none',
 		daemonize => undef,
-		serial => "unix:$rundir/$name.serial,server,nowait",
 		monitor => "unix:$rundir/$name.monitor,server,nowait",
 		pidfile => "$rundir/$name.pid"
 	};
@@ -159,56 +160,74 @@ sub trim() {
 
 sub bool() {
 	local $_ = shift;
-	return 1 if /^([yjt]|(on|1)$)/i;
-	return 0 if /^([nf]|(off|0)$)/i;
-	return shift;
+	die "missing value\n" unless defined;
+	return 1 if /^(?:on|yes|1|enabled?|true)$/i;
+	return 0 if /^(?:off|no|0|disabled?|false)$/i;
+	die "unable to parse '$_' as a boolean value\n";
 }
 
-our %keys; @keys{qw(kvm mem cpus mac vnc tablet drive disk acpi virtio aio cache)} = ();
-
-sub mem {
+sub set_mem {
 	my $args = $self->args;
 	$args->{m} = int(shift);
 }
 
-sub cpus {
+sub set_cpus {
 	my $args = $self->args;
 	$args->{smp} = int(shift);
 }
 
-sub mac {
+sub set_mac {
 	my $nics = $self->nics;
 	push @$nics, shift;
 }
 
-sub vnc {
+sub set_vnc {
 	my $id = $self->id;
-	my $args = $self->args;
-	$args->{vnc} = bool(shift) ? ":$id" : 'none'
+	$self->args->{vnc} = bool(shift) ? ":$id" : 'none';
+}
+
+sub set_tablet {
+	$self->tablet(bool(shift));
 }
 
 sub tablet {
-	return $self->{tablet} = bool(shift)
-		if $@;
+	return $self->{tablet} = shift if @_;
 	return exists $self->{tablet}
 		? $self->{tablet}
 		: $self->args->{vnc} ne 'none';
 }
 
-sub drive {
+sub set_serial {
+	local $_ = shift;
+	if(/^(?:ttyS)?(\d+)$/) {
+		$self->serialport(int($1));
+	} elsif(/^(?:COM)([1-9]\d*)$/) {
+		$self->serialport(int($1) - 1);
+	} elsif(/^none$/i) {
+		$self->serialport(undef);
+	} else {
+		die "unknown serial port '$_'\n";
+	}
+}
+
+sub set_drive {
 	my $drive = shift;
 	my ($p) = map { s/^file=// ? $_ : () } split(',', $drive);
-	die "Can't parse deprecated drive= statement\n"
+	die "can't parse deprecated drive= statement\n"
 		unless $p;
 	$self->disk($p);
 	warn "WARNING: interpreting deprecated drive=$drive as disk=$p\n";
 }
 
-sub disk {
+sub set_disk {
 	push @{$self->disks}, shift;
 }
 
-sub acpi {
+sub set_cache {
+	$self->cache(shift);
+}
+
+sub set_acpi {
 	my $args = $self->args;
 	if(bool(shift)) {
 		delete $args->{'no-acpi'};
@@ -217,7 +236,7 @@ sub acpi {
 	}
 }
 
-sub virtio {
+sub set_virtio {
 	my $args = $self->args;
 	if(bool(shift)) {
 		$self->nictype('virtio');
@@ -230,12 +249,8 @@ sub virtio {
 	}
 }
 
-sub kvm {
-	if(@_) {
-		return $self->{kvm} = shift;
-	} else {
-		return $self->{kvm} // $kvm;
-	}
+sub set_kvm {
+	$self->kvm(shift);
 }
 
 sub config {
@@ -254,14 +269,21 @@ sub config {
 			push @$extra, $key;
 			push @$extra, $val if defined $val;
 		} else {
-			my ($key, $val) = split('=', $_, 2);
-			die "Malformed line at $cfg:$.\n"
-				unless defined $val;
-			trim($key, $val);
-			my $lkey = lc $key;
-			die "unknown configuration parameter at $file:@{[$cfg->input_line_number]}: $key\n"
-				unless exists $keys{$lkey};
-			$self->$lkey($val);
+			eval {
+				my ($key, $val) = split('=', $_, 2);
+				die "malformed line\n"
+					unless defined $val;
+				trim($key, $val);
+				my $lkey = 'set_'.lc($key);
+				die "unknown configuration parameter '$key'\n"
+					unless $self->can($lkey);
+				eval { $self->$lkey($val) };
+				die "$key: $@" if $@;
+			};
+			if(my $err = $@) {
+				my $line = $cfg->input_line_number;
+				die "$file:$line: $@";
+			}
 		}
 	}
 }
@@ -306,6 +328,16 @@ sub command {
 	push @cmd, -usbdevice => 'tablet'
 		if $self->tablet;
 
+	my $serial = $self->serialport;
+	if(defined $serial) {
+		for(my $i = 0; $i < $serial; $i++) {
+			push @cmd, -serial => 'null';
+		}
+		push @cmd, -serial => "unix:$rundir/$name.serial,server,nowait",
+	} else {
+		push @cmd, -serial => 'none';
+	}
+
 	my $nics = $self->nics;
 	my $nictype = $self->nictype;
 	my $i = 0;
@@ -337,16 +369,14 @@ sub command {
 		push @cmd, -drive => keyval(file => $disk, if => $disktype, %opt);
 	}
 
-	push @cmd, @{$self->extra};
+	push @cmd, @{$self->extra}, @_;
 
 	return \@cmd;
 }
 
 sub sh {
 	my $cmd = $self->command(@_);
-	my $prog = shift @$cmd;
-	shift @$cmd;
-	return join(' ', map { s|[^A-Z0-9_.,=:+/-]|\\$&|gi; $_ } ($prog, @$cmd))
+	return join(' ', map { s|[^A-Z0-9_.,=:+/-]|\\$&|gi; $_ } @$cmd)
 }
 
 sub socket {
@@ -368,9 +398,9 @@ sub socket {
 }
 
 sub monitor {
-	return $self->socket('monitor')
+	return $self->socket('monitor');
 }
 
 sub serial {
-	return $self->socket('serial')
+	return $self->socket('serial');
 }

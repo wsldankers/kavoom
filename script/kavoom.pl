@@ -82,14 +82,14 @@ my %commands = (
 		my $name = $kvm->name;
 		die "virtual machine $name already running\n"
 			if $kvm->running;
-		my $cmd = $kvm->command;
+		my $cmd = $kvm->command(@_);
 		local $ENV{kavoom_id} = $kvm->id;
 		local $ENV{kavoom_name} = $kvm->name;
-		run(@$cmd, @_);
+		run(@$cmd);
 	},
 	command => sub {
 		my $kvm = &kvm;
-		my $cmd = $kvm->sh;
+		my $cmd = $kvm->sh(@_);
 		print "$cmd\n"
 			or die $!;
 	},
@@ -336,6 +336,14 @@ later using the C<monitor> command.
 Whether to allocate a USB tablet device. You can also add or remove such a
 device later using the C<monitor> command. Defaults to I<yes> if a VNC
 socket was allocated, otherwise I<no>.
+
+=item C<serial> = I<0>/I<1>/I<none>
+
+Whether to attach a serial terminal, accessible through the C<kavoom
+serial> command. The argument may be either I<none> if kavoom should
+allocate no serial terminal at all, I<0>, I<ttyS0> or I<COM1> to use the
+first serial port, or I<1>, I<ttyS1> or I<COM2> to use the second serial
+port. The default is I<0>.
 
 =item C<acpi> = I<yes>/I<no>
 
