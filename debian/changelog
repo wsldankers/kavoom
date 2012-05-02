@@ -1,3 +1,11 @@
+kavoom (2.11) stable; urgency=low
+
+  * Add serial= option.
+
+  * Stricter boolean option parsing.
+
+ -- Wessel Dankers <wsl@fruit.je>  Wed, 02 May 2012 15:19:47 +0200
+
 kavoom (2.10) stable; urgency=low
 
   * Fix init script dependencies
