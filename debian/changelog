@@ -1,3 +1,9 @@
+kavoom (2.12) stable; urgency=low
+
+  * Add serial numbers to disks.
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 04 May 2012 10:19:22 +0200
+
 kavoom (2.11) stable; urgency=low
 
   * Add serial= option.
