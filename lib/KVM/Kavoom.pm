@@ -9,6 +9,7 @@ use IO::File;
 use IO::Socket::UNIX;
 use Fcntl;
 use Expect;
+use Digest::MD5 qw(md5_base64);
 
 our $configdir;
 our $statedir;
@@ -363,6 +364,9 @@ sub command {
 			$aio //= 'native';
 			$opt{format} = 'raw';
 		}
+		my $serial = substr(md5_base64($disk), 0, 20);
+		$serial =~ tr{+/}{XY};
+		$opt{serial} = $serial;
 		$opt{cache} = $cache if defined $cache;
 		$opt{aio} = $aio if defined $aio;
 		$opt{boot} = 'on' unless $i++;
