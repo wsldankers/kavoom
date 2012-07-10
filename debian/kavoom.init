@@ -103,6 +103,9 @@ case $action in start)
 	done
 	wait
 	echo "$none."
+;; restart|force-reload)
+	$0 stop
+	$0 start
 ;; *)
 	echo "Usage: $0 {start|stop}" >&2
 	exit 1

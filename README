@@ -1,0 +1,26 @@
+Kavoom
+======
+
+Manage KVM instances using configuration files and start/stop/monitor
+commands.
+
+See also the homepage at https://fruit.je/kavoom and the manual at
+https://fruit.je/kavoom-manual.
+
+Building
+--------
+
+Building this package is a little quirky: it uses both autotools and
+Module::Build. Simply call both (in any order you like) to install
+everything:
+
+	sh configure
+	make
+	make install
+
+	perl Build.PL
+	./Build
+	./Build install
+
+-- 
+Wessel Dankers

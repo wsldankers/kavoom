@@ -1,5 +1,4 @@
-script/kavoom.pl
+Build.PL
 lib/KVM/Kavoom.pm
 MANIFEST
 NEWS
-Build.PL

@@ -1,0 +1,8 @@
+#! @PERL@
+
+BEGIN {
+	our $PACKAGE = "@PACKAGE@";
+	our $VERSION = "@VERSION@";
+	our $prefix = "@prefix@";
+	our $sysconfdir = "@sysconfdir@";
+}

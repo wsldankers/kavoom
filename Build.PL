@@ -5,7 +5,7 @@ use warnings FATAL => 'all';
 
 use Script::Build;
 
-my $build = new Script::Build(
+my $build = new Module::Build(
 	module_name => 'KVM::Kavoom',
 	dist_name => 'kavoom',
 	dist_version => '2.12',

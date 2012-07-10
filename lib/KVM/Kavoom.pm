@@ -308,9 +308,28 @@ sub running {
 	my $name = $self->name;
 	my $fh = new IO::File("$rundir/$name.pid", '+<');
 	return undef unless $fh;
-	return undef if fcntl($fh, F_SETLK, pack('ssQQl', F_WRLCK, SEEK_CUR));
-	return 1 if $!{EAGAIN};
-	die "fcntl($rundir/$name.pid, F_SETLK): $!\n";
+
+	my $flock = pack('ssQQl', F_WRLCK, SEEK_CUR);
+	die "fcntl($rundir/$name.pid, F_GETLK): $!\n"
+		unless fcntl($fh, F_GETLK, $flock);
+	my ($type) = unpack('ssQQl', $flock);
+	return 1 if $type == F_WRLCK;
+
+	# Some versions of qemu do not maintain the lock.
+	# That means we no longer have a reliable way to check
+	# if the process is still running. :( Kludge around it.
+	my $unix = new IO::File('/proc/net/unix', '<')
+		or die "open(/proc/net/unix): $!\n";
+	my $re = qr{ \Q$rundir/$name.monitor\E$};
+	for(;;) {
+		my $line = $unix->getline;
+		last unless defined $line;
+		chomp $line;
+		return 1 if $line =~ $re;
+	}
+	my $err = $!;
+	$unix->eof or die "read(/proc/net/unix): $err\n";
+	return 0;
 }
 
 sub command {

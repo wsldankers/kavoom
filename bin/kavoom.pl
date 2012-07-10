@@ -1,3 +1,5 @@
+#! /usr/bin/env perl
+
 use strict;
 use warnings FATAL => 'all';
 use utf8;
@@ -5,6 +7,11 @@ use utf8;
 use POSIX qw(_exit setsid :sys_wait_h);
 use IO::Handle;
 use KVM::Kavoom;
+
+our $PACKAGE //= 'kavoom';
+our $VERSION //= 'git';
+our $prefix;
+our $sysconfdir;
 
 my $exit_status;
 
@@ -46,17 +53,19 @@ my @tried;
 my $configfile;
 
 sub concat {
-	return undef if grep !defined, @_;
+	return if grep { !defined } @_;
 	return join('/', @_);
 }
 
 foreach(
 			$ENV{KAVOOMRC},
 			concat($ENV{HOME}, '.kavoomrc'),
-			concat($DIR{conf}, 'kavoom.cfg'),
-			concat($DIR{root}, 'etc', 'kavoom.cfg'),
+			concat($sysconfdir, 'kavoom.cfg'),
+			concat($prefix, 'etc', 'kavoom.cfg'),
 			'/etc/kavoom.cfg',
-			'/usr/local/etc/kavoom.cfg'
+			'/usr/local/etc/kavoom.cfg',
+			"/opt/$PACKAGE/etc/kavoom.cfg",
+			"/opt/$PACKAGE-$VERSION/etc/kavoom.cfg",
 		) {
 	next unless defined;
 	next if exists $tried{$_};
