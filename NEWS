@@ -1,3 +1,8 @@
+2.13
+	Replace Script::Build with autotools.
+	Update debian build scripts
+	Kludge around broken qemu pidfile locking
+
 2.12
 	Add serial numbers to disks.
 

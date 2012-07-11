@@ -1,3 +1,9 @@
+kavoom (2.13) stable; urgency=low
+
+  * Restructure packaging to use autotools where appropriate.
+
+ -- Wessel Dankers <wsl@fruit.je>  Tue, 10 Jul 2012 16:32:12 +0200
+
 kavoom (2.12) stable; urgency=low
 
   * Add serial numbers to disks.
