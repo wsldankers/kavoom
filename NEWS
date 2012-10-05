@@ -1,3 +1,6 @@
+2.14
+	Remove pidfile locking kludge
+
 2.13
 	Replace Script::Build with autotools.
 	Update debian build scripts

@@ -1,6 +1,14 @@
+kavoom (2.14) stable; urgency=low
+
+  * Remove pid file kludge
+
+ -- Wessel Dankers <wsl@fruit.je>  Fri, 05 Oct 2012 15:31:04 +0200
+
 kavoom (2.13) stable; urgency=low
 
   * Restructure packaging to use autotools where appropriate.
+
+  * Kludge around broken qemu pidfile locking
 
  -- Wessel Dankers <wsl@fruit.je>  Tue, 10 Jul 2012 16:32:12 +0200
 
