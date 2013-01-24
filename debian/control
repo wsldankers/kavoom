@@ -7,7 +7,7 @@ Standards-Version: 3.9.1
 
 Package: kavoom
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, qemu-kvm | kvm, libkvm-kavoom-perl (= ${binary:Version})
+Depends: ${misc:Depends}, ${perl:Depends}, qemu-kvm (>= 1), libkvm-kavoom-perl (= ${binary:Version})
 Description: Manage KVM instances
  Manage KVM instances using configuration files and start/stop/monitor
  commands.

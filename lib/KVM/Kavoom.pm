@@ -356,12 +356,12 @@ sub command {
 
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
-	undef $i;
 	foreach my $disk (@$disks) {
 		my $cache = $self->cache;
 		my $aio = $self->aio;
 		my %opt;
-		die "No such file or directory: $disk\n" unless -e $disk;
+		die "No such file or directory: $disk\n"
+			unless -e $disk;
 		if(-b _) {
 			$cache //= 'none';
 			$aio //= 'native';
@@ -372,7 +372,6 @@ sub command {
 		$opt{serial} = $serial;
 		$opt{cache} = $cache if defined $cache;
 		$opt{aio} = $aio if defined $aio;
-		$opt{boot} = 'on' unless $i++;
 		push @cmd, -drive => keyval(file => $disk, if => $disktype, %opt);
 	}
 
