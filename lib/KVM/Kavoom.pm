@@ -348,7 +348,7 @@ sub command {
 	foreach my $mac (@$nics) {
 		push @cmd,
 			-net => keyval(tap => undef, vlan => $i, ifname => $name.$i),
-			-net => keyval(nic => undef, vlan => $i, model => $nictype, macaddr => $mac);
+			-net => keyval(nic => undef, vlan => $i, name => $name.$i, model => $nictype, macaddr => $mac);
 		$i++;
 	}
 	push @cmd, -net => 'none'
