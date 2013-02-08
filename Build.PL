@@ -3,7 +3,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Script::Build;
+use Module::Build;
 
 my $build = new Module::Build(
 	module_name => 'KVM::Kavoom',
