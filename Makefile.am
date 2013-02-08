@@ -1,7 +1,7 @@
 bin_SCRIPTS = bin/kavoom
 man_MANS = bin/kavoom.1
 
-EXTRA_DIST = bin lib debian
+EXTRA_DIST = bin
 CLEANFILES = bin/kavoom bin/kavoom.tmp bin/kavoom.1
 
 .pl:

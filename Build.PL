@@ -12,6 +12,7 @@ my $build = new Module::Build(
 	dist_abstract => 'Manage Linux KVM virtual machine instances',
 	dist_author => 'Wessel Dankers <wsl@fruit.je>',
 	license => 'perl',
+	script_files => [],
 	create_makefile_pl => 'small'
 );
 $build->create_build_script;
