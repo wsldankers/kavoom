@@ -2,6 +2,7 @@
 
 DEB_PERL_CHECK_FLAGS =
 DEB_DH_BUILDDEB_ARGS_DEFAULT = -- -Zxz -z9
+DEB_DH_INSTALLINIT_ARGS_DEFAULT = --no-start
 
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk

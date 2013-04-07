@@ -1,13 +1,13 @@
 This package was debianized by Wessel Dankers <wsl@fruit.je> on
 Mon, 14 Sep 2009 19:41:22 +0200.
 
-It was downloaded from http://www.non-gnu.uvt.nl/.
+It can be downloaded from http://www.non-gnu.uvt.nl/.
 
 Upstream Author: Wessel Dankers <wsl@fruit.je>
 
-Copyright: 2009 Wessel Dankers <wsl@fruit.je>
+Copyright: © 2009-2013 Wessel Dankers <wsl@fruit.je>
 
 License: GPL version 3 or any later version.
 
-The Debian packaging is (C) 2009, Wessel Dankers <wsl@fruit.je> and
-is licensed under the GPL, see '/usr/share/common-licenses/GPL'.
+The Debian packaging is © 2009-2013, Wessel Dankers <wsl@fruit.je> and
+is licensed under the GPL, see '/usr/share/common-licenses/GPL-3'.

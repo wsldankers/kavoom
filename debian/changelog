@@ -1,3 +1,9 @@
+kavoom (2.16~0) UNRELEASED; urgency=low
+
+  * Use dh_installinit --no-start to avoid stop/start on upgrade
+
+ -- Wessel Dankers <wsl@fruit.je>  Sun, 07 Apr 2013 17:38:15 +0200
+
 kavoom (2.15) stable; urgency=low
 
   * Remove boot= parameter

@@ -22,12 +22,6 @@ zcat='exec zcat -f'
 
 test -x $program || exit 0
 
-if ${KAVOOM_IS_BEING_INSTALLED:-false}
-then
-	echo "Not running init script during install/upgrade." >&2
-	exit 0
-fi
-
 action=$1
 shift
 
