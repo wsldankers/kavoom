@@ -1,4 +1,4 @@
-kavoom (2.16~1) UNRELEASED; urgency=low
+kavoom (2.16) stable; urgency=low
 
   * Use dh_installinit --no-start to avoid stop/start on upgrade
     
