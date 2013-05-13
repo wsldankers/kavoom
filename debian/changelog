@@ -1,4 +1,4 @@
-kavoom (3.0~0) UNRELEASED; urgency=low
+kavoom (3.0) stable; urgency=low
 
   * Convert kvm command line arguments to -device format
 
