@@ -17,6 +17,7 @@ program=/usr/bin/$kavoom
 stopaction=savestate
 stoporder=parallel
 stagger=3
+modprobe_vhost_net=yes
 gzip='exec gzip --fast'
 zcat='exec zcat -f'
 
@@ -34,6 +35,9 @@ esac
 test -r /etc/default/$kavoom && . /etc/default/$kavoom
 
 case $action in start)
+	case $modprobe_vhost_net in yes)
+		modprobe -q vhost_net || :
+	esac
 	mkdir -p /var/run/$kavoom
 	echo -n "Starting virtual machines:"
 	none=' (none)'
@@ -48,7 +52,7 @@ case $action in start)
 				echo -n " $i(r)"
 				mv "$state" "$spent"
 				sync
-				$program start "$i" -incoming "exec:zcat -f '$spent' /dev/zero 2>/dev/null"
+				$program start "$i" -incoming "exec:$zcat '$spent' /dev/zero 2>/dev/null"
 				sleep $stagger
 				none=
 			elif [ -e "/etc/$kavoom/$i.auto" ]

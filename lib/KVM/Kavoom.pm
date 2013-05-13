@@ -52,7 +52,7 @@ field cache => undef;
 field aio => undef;
 field serialport => 0;
 field kvm => sub { $kvm };
-field have_vhost_net => sub { -e '/sys/module/vhost_net' || -e '/sys/devices/virtual/misc/vhost-net' };
+field vhost_net => sub { -e '/sys/module/vhost_net' || -e '/sys/devices/virtual/misc/vhost-net' };
 
 sub huge() {
 	our $huge;
