@@ -1,3 +1,13 @@
+kavoom (3.0~0) UNRELEASED; urgency=low
+
+  * Convert kvm command line arguments to -device format
+
+  * Always allocate 8 virtconsoles if virtio=yes
+
+  * Always allocate 4 serial ports unless serial=none
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 13 May 2013 19:10:14 +0200
+
 kavoom (2.16) stable; urgency=low
 
   * Use dh_installinit --no-start to avoid stop/start on upgrade

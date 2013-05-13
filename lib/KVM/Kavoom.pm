@@ -46,8 +46,7 @@ field name;
 field disks => [];
 field nics => [];
 field extra => [];
-field nictype => 'e1000';
-field disktype => 'ide';
+field virtio => undef;
 field cache => undef;
 field aio => undef;
 field serialport => 0;
@@ -239,20 +238,19 @@ sub set_acpi {
 }
 
 sub set_virtio {
-	my $args = $self->args;
-	if(bool(shift)) {
-		$self->nictype('virtio');
-		$self->disktype('virtio');
-		$args->{balloon} = 'virtio';
-	} else {
-		delete $self->{nictype};
-		delete $self->{disktype};
-		delete $args->{balloon};
-	}
+	$self->virtio(bool(shift));
 }
 
 sub set_kvm {
 	$self->kvm(shift);
+}
+
+sub nictype {
+	return $self->virtio ? 'virtio-net' : 'e1000';
+}
+
+sub disktype {
+	return $self->virtio ? 'virtio-blk' : 'ide-hd';
 }
 
 sub config {
@@ -333,14 +331,25 @@ sub command {
 	push @cmd, -usbdevice => 'tablet'
 		if $self->tablet;
 
-	my $serial = $self->serialport;
-	if(defined $serial) {
-		for(my $i = 0; $i < $serial; $i++) {
-			push @cmd, -serial => 'null';
+	if(defined $self->serialport) {
+		for(my $i = 0; $i < 4; $i++) {
+			push @cmd,
+				-chardev => keyval(socket => undef, server => undef, nowait => undef, id => "serial-$i", path => "$rundir/$name.serial-$i"),
+				-device => keyval('isa-serial' => undef, chardev => "serial-$i");
+
 		}
-		push @cmd, -serial => "unix:$rundir/$name.serial,server,nowait",
 	} else {
 		push @cmd, -serial => 'none';
+	}
+
+	if($self->virtio) {
+		push @cmd, -device => 'virtio-balloon';
+		push @cmd, -device => 'virtio-serial';
+		for(my $i = 0; $i < 8; $i++) {
+			push @cmd,
+				-chardev => keyval(socket => undef, server => undef, nowait => undef, id => "console-$i", path => "$rundir/$name.console-$i"),
+				-device => keyval(virtconsole => undef, chardev => "console-$i", name => "hvc$i");
+		}
 	}
 
 	my $nics = $self->nics;
@@ -349,15 +358,15 @@ sub command {
 		if $self->vhost_net;
 	while(my ($i, $mac) = each @$nics) {
 		push @cmd,
-			-net => keyval(tap => undef, vlan => $i, ifname => $name.$i, @vhost_net),
-			-net => keyval(nic => undef, vlan => $i, name => $name.$i, model => $nictype, macaddr => $mac);
+			-netdev => keyval(tap => undef, id => "net-$i", ifname => $name.$i, @vhost_net),
+			-device => keyval($nictype => undef, netdev => "net-$i", mac => $mac);
 	}
 	push @cmd, -net => 'none'
 		unless @$nics;
 
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
-	foreach my $disk (@$disks) {
+	while(my ($i, $disk) = each @$disks) {
 		my $cache = $self->cache;
 		my $aio = $self->aio;
 		my %opt;
@@ -373,7 +382,8 @@ sub command {
 		$opt{serial} = $serial;
 		$opt{cache} = $cache if defined $cache;
 		$opt{aio} = $aio if defined $aio;
-		push @cmd, -drive => keyval(file => $disk, if => $disktype, %opt);
+		push @cmd, -drive => keyval(file => $disk, id => "blk-$i", if => 'none', %opt);
+		push @cmd, -device => keyval($disktype => undef, drive => "blk-$i");
 	}
 
 	push @cmd, @{$self->extra}, @_;
@@ -386,11 +396,16 @@ sub sh {
 	return join(' ', map { s|[^A-Z0-9_.,=:+/-]|\\$&|gi; $_ } @$cmd)
 }
 
-sub socket {
+sub socket_path {
+	my $type = shift;
 	my $name = $self->name;
+	return "$rundir/$name.$type";
+}
+
+sub socket {
 	my $type = shift;
 	my $sock = new IO::Socket::UNIX(
-		Peer => "$rundir/$name.$type",
+		Peer => $self->socket_path($type),
 		Type => SOCK_STREAM,
 		Timeout => 1,
 		@_
@@ -409,5 +424,18 @@ sub monitor {
 }
 
 sub serial {
-	return $self->socket('serial');
+	my $num = shift;
+	my $serialport = $self->serialport;
+	$num //= $serialport // 0;
+	die "no serial ports configured\n"
+		unless defined $serialport || -e $self->socket_path('serial-0');
+	return $self->socket("serial-$num");
+}
+
+sub console {
+	my $num = shift // 0;
+	my $path = $self->socket_path("console-$num");
+	die "console only available with virtio=yes\n"
+		unless $self->virtio || -e $self->socket_path('console-0');
+	return $self->socket("console-$num");
 }

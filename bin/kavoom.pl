@@ -107,7 +107,7 @@ my %commands = (
 		my $name = $kvm->name;
 		die "virtual machine $name not running.\n"
 			unless $kvm->running;
-		my $exp = $kvm->serial
+		my $exp = $kvm->serial(shift)
 			or die "can't connect to serial port of $name.\n";
 		print STDERR "Escape character is '^]'.\n";
 		$exp->interact(\*STDIN, "");
@@ -131,6 +131,17 @@ my %commands = (
 			$exp->interact(\*STDIN, "");
 			print "\n";
 		}
+	},
+	console => sub {
+		my $kvm = &kvm;
+		my $name = $kvm->name;
+		die "virtual machine $name not running.\n"
+			unless $kvm->running;
+		my $exp = $kvm->console(shift)
+			or die "can't connect to console port of $name.\n";
+		print STDERR "Escape character is '^]'.\n";
+		$exp->interact(\*STDIN, "");
+		print "\n";
 	},
 	shutdown => sub {
 		my $kvm = &kvm;
@@ -215,14 +226,20 @@ Print the command as it would be executed by the C<start> command.
 =item C<kavoom> C<serial> I<instance>
 
 Get access to the serial console of an already running instance.
-You can leave the serial console by typing C<^]> (control + right angle
+You can leave the serial console by typing C<^]> (control + right square
 bracket).
+
+=item C<kavoom> C<console> I<instance>
+
+Get access to the virtio console of an already running instance.
+You can leave the virtio console by typing C<^]> (control + right square
+bracket). Only available if the VM is configured with C<virtio> = I<yes>.
 
 =item C<kavoom> C<monitor> I<instance> [I<monitor command>]
 
 Without arguments, gives access to the interactive QEMU console (kvm is
 based on QEMU, so the command set is the same).
-You can leave the monitor by typing C<^]> (control + right angle bracket).
+You can leave the monitor by typing C<^]> (control + right square bracket).
 
 If arguments are given to the monitor command, they are input into the QEMU
 monitor as a command and kavoom will wait until the prompt returns.
@@ -350,9 +367,16 @@ socket was allocated, otherwise I<no>.
 
 Whether to attach a serial terminal, accessible through the C<kavoom
 serial> command. The argument may be either I<none> if kavoom should
-allocate no serial terminal at all, I<0>, I<ttyS0> or I<COM1> to use the
-first serial port, or I<1>, I<ttyS1> or I<COM2> to use the second serial
-port. The default is I<0>.
+allocate no serial terminal at all, or a number, in which case kavoom will
+allocate all four serial ports. The number indicates which of those four
+serial ports will be used by default when invoking the C<kavoom serial>
+command.
+
+Specify I<0>, I<ttyS0> or I<COM1> to use the first serial port, or I<1>,
+I<ttyS1> or I<COM2> to use the second serial port, etcetera, up to I<3>
+(I<COM4>).
+
+The default is I<0>.
 
 =item C<acpi> = I<yes>/I<no>
 
@@ -436,7 +460,7 @@ Sample session:
  # kavoom serial foobar
  Escape character is '^]'.
 
- Debian GNU/Linux 5.0 foobar ttyS0
+ Debian GNU/Linux 7.0 foobar ttyS0
 
  foobar login: ^]
  #
