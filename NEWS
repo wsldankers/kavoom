@@ -1,3 +1,11 @@
+2.16
+	Use vhost_net if available
+	Improve packaging and build system
+
+2.15
+	Deprecate boot= as per qemu-kvm upstream
+	Add name= to nic hardware
+	
 2.14
 	Remove pidfile locking kludge
 

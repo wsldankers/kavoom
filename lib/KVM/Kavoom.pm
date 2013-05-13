@@ -52,6 +52,7 @@ field cache => undef;
 field aio => undef;
 field serialport => 0;
 field kvm => sub { $kvm };
+field have_vhost_net => sub { -e '/sys/module/vhost_net' || -e '/sys/devices/virtual/misc/vhost-net' };
 
 sub huge() {
 	our $huge;
@@ -344,15 +345,15 @@ sub command {
 
 	my $nics = $self->nics;
 	my $nictype = $self->nictype;
-	my $i = 0;
-	foreach my $mac (@$nics) {
+	my @vhost_net = (vhost => 'on')
+		if $self->vhost_net;
+	while(my ($i, $mac) = each @$nics) {
 		push @cmd,
-			-net => keyval(tap => undef, vlan => $i, ifname => $name.$i),
+			-net => keyval(tap => undef, vlan => $i, ifname => $name.$i, @vhost_net),
 			-net => keyval(nic => undef, vlan => $i, name => $name.$i, model => $nictype, macaddr => $mac);
-		$i++;
 	}
 	push @cmd, -net => 'none'
-		unless $i;
+		unless @$nics;
 
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
