@@ -52,25 +52,27 @@ field aio => undef;
 field serialport => 0;
 field kvm => sub { $kvm };
 field vhost_net => sub { -e '/dev/vhost-net' };
+field vnc => undef;
+field mem => undef;
+field cpus => undef;
+field acpi => 1;
 
-sub huge() {
-	our $huge;
-	unless(defined $huge) {
-		$huge = '';
-		my $mtab = new IO::File('/proc/mounts', '<')
-			or return $huge;
-		local $_;
-		while(defined($_ = $mtab->getline)) {
-			chomp;
-			next if /^\s*#/;
-			next unless /^((?:[^ \t\\]|\\.)+)[ \t]+((?:[^ \t\\]|\\.)+)[ \t]+((?:[^ \t\\]|\\.)+)[ \t]/;
-			$huge = $2 if $3 eq 'hugetlbfs';
-		}
-		$mtab->close;
+field hugepages => sub {
+	my $hugepages;
+
+	my $mtab = new IO::File('/proc/mounts', '<')
+		or return undef;
+	local $_;
+	while(defined($_ = $mtab->getline)) {
+		chomp;
+		next if /^\s*#/;
+		next unless /^((?:[^ \t\\]|\\.)+)[ \t]+((?:[^ \t\\]|\\.)+)[ \t]+((?:[^ \t\\]|\\.)+)[ \t]/;
+		$hugepages = $2 if $3 eq 'hugetlbfs';
 	}
+	$mtab->close;
 
-	return $huge;
-}
+	return $hugepages;
+};
 
 sub new {
 	my $name = shift;
@@ -82,24 +84,6 @@ sub new {
 
 	return super(name => $name);
 }
-
-field args => sub {
-	my $self = shift;
-	my $name = $self->name;
-
-	my $args = {
-		vnc => 'none',
-		daemonize => undef,
-		monitor => "unix:$rundir/$name.monitor,server,nowait",
-		pidfile => "$rundir/$name.pid"
-	};
-
-	my $huge = huge();
-	$args->{'mem-path'} = $huge
-		if $huge ne '';
-
-	return $args;
-};
 
 field id => sub {
 	my $self = shift;
@@ -168,13 +152,11 @@ sub bool() {
 }
 
 sub set_mem {
-	my $args = $self->args;
-	$args->{m} = int(shift);
+	$self->mem(int(shift));
 }
 
 sub set_cpus {
-	my $args = $self->args;
-	$args->{smp} = int(shift);
+	$self->cpus(int(shift));
 }
 
 sub set_mac {
@@ -183,8 +165,7 @@ sub set_mac {
 }
 
 sub set_vnc {
-	my $id = $self->id;
-	$self->args->{vnc} = bool(shift) ? ":$id" : 'none';
+	$self->vnc(bool(shift));
 }
 
 sub set_tablet {
@@ -192,10 +173,10 @@ sub set_tablet {
 }
 
 sub tablet {
-	return $self->{tablet} = shift if @_;
+	return $self->{tablet} = bool(shift) if @_;
 	return exists $self->{tablet}
 		? $self->{tablet}
-		: $self->args->{vnc} ne 'none';
+		: $self->{vnc};
 }
 
 sub set_serial {
@@ -229,12 +210,7 @@ sub set_cache {
 }
 
 sub set_acpi {
-	my $args = $self->args;
-	if(bool(shift)) {
-		delete $args->{'no-acpi'};
-	} else {
-		undef $args->{'no-acpi'};
-	}
+	$self->acpi(bool(shift));
 }
 
 sub set_virtio {
@@ -288,21 +264,6 @@ sub config {
 	}
 }
 
-sub keyval() {
-	my @args;
-	while(@_) {
-		my $key = shift;
-		my $val = shift;
-		if(defined $val) {
-			$val =~ s/,/,,/g;
-			push @args, "$key=$val";
-		} else {
-			push @args, $key;
-		}
-	}
-	return join(',', @args);
-}
-
 sub running {
 	my $name = $self->name;
 	my $fh = new IO::File("$rundir/$name.pid", '+<');
@@ -316,75 +277,37 @@ sub running {
 }
 
 sub command {
-	my @cmd = ($self->kvm, -name => $self->name);
-
+	my $devices = $self->devices_path;
 	my $name = $self->name;
 	my $id = $self->id;
+	my $vnc = $self->vnc ? "localhost:$id" : 'none';
 
-	my $args = $self->args;
-	while(my ($key, $val) = each(%$args)) {
-		push @cmd, "-$key";
-		push @cmd, $val
-			if defined $val;
-	}
+	my @cmd = ($self->kvm,
+		-name => $name,
+		-pidfile => "$rundir/$name.pid",
+		-readconfig => $devices,
+		-daemonize,
+		-nodefaults,
+		-vnc => $vnc,
+	);
+
+	my $cpus = $self->cpus;
+	push @cmd, -smp => $cpus
+		if defined $cpus;
+
+	my $mem = $self->mem;
+	push @cmd, -m => $mem
+		if defined $mem;
+
+	push @cmd, '-no-acpi'
+		if !$self->acpi;
 
 	push @cmd, -usbdevice => 'tablet'
 		if $self->tablet;
 
-	if(defined $self->serialport) {
-		for(my $i = 0; $i < 4; $i++) {
-			push @cmd,
-				-chardev => keyval(socket => undef, server => undef, nowait => undef, id => "serial-$i", path => "$rundir/$name.serial-$i"),
-				-device => keyval('isa-serial' => undef, chardev => "serial-$i");
-
-		}
-	} else {
-		push @cmd, -serial => 'none';
-	}
-
-	if($self->virtio) {
-		push @cmd, -device => 'virtio-balloon';
-		push @cmd, -device => 'virtio-serial';
-		for(my $i = 0; $i < 8; $i++) {
-			push @cmd,
-				-chardev => keyval(socket => undef, server => undef, nowait => undef, id => "console-$i", path => "$rundir/$name.console-$i"),
-				-device => keyval(virtconsole => undef, chardev => "console-$i", name => "hvc$i");
-		}
-	}
-
-	my $nics = $self->nics;
-	my $nictype = $self->nictype;
-	my @vhost_net = (vhost => 'on')
-		if $self->vhost_net;
-	while(my ($i, $mac) = each @$nics) {
-		push @cmd,
-			-netdev => keyval(tap => undef, id => "net-$i", ifname => $name.$i, @vhost_net),
-			-device => keyval($nictype => undef, netdev => "net-$i", mac => $mac);
-	}
-	push @cmd, -net => 'none'
-		unless @$nics;
-
-	my $disks = $self->disks;
-	my $disktype = $self->disktype;
-	while(my ($i, $disk) = each @$disks) {
-		my $cache = $self->cache;
-		my $aio = $self->aio;
-		my %opt;
-		die "No such file or directory: $disk\n"
-			unless -e $disk;
-		if(-b _) {
-			$cache //= 'none';
-			$aio //= 'native';
-			$opt{format} = 'raw';
-		}
-		my $serial = substr(md5_base64($disk), 0, 20);
-		$serial =~ tr{+/}{XY};
-		$opt{serial} = $serial;
-		$opt{cache} = $cache if defined $cache;
-		$opt{aio} = $aio if defined $aio;
-		push @cmd, -drive => keyval(file => $disk, id => "blk-$i", if => 'none', %opt);
-		push @cmd, -device => keyval($disktype => undef, drive => "blk-$i");
-	}
+	my $hugepages = $self->hugepages;
+	push @cmd, '-mem-path' => $hugepages
+		if defined $hugepages;
 
 	push @cmd, @{$self->extra}, @_;
 
@@ -393,7 +316,7 @@ sub command {
 
 sub sh {
 	my $cmd = $self->command(@_);
-	return join(' ', map { s|[^A-Z0-9_.,=:+/-]|\\$&|gi; $_ } @$cmd)
+	return join(' ', map { s|[^A-Z0-9_.,=:+/%\@-]|\\$&|gi; $_ } @$cmd)
 }
 
 sub socket_path {
@@ -438,4 +361,148 @@ sub console {
 	die "console only available with virtio=yes\n"
 		unless $self->virtio || -e $self->socket_path('console-0');
 	return $self->socket("console-$num");
+}
+
+sub devices_path {
+	my $name = $self->name;
+	return "$statedir/$name.devices";
+}
+
+sub devices_stanza {
+	my $fh = shift;
+	my $name = shift;
+	my $id = shift;
+
+	if(defined $id) {
+		$fh->write("[$name \"$id\"]\n")
+			or die "write error: $!\n";
+	} else {
+		$fh->write("[$name]\n")
+			or die "write error: $!\n";
+	}
+
+	while(@_) {
+		my $key = shift;
+		my $val = shift;
+		utf8::encode($val);
+		die "value '$val' invalid because it contains quotes\n"
+			if $val =~ /"/;
+		die "value '$val' too long\n"
+			if length($val) > 1023;
+		$fh->write(" $key = \"$val\"\n")
+			or die "write error: $!\n";
+	}
+
+	$fh->write("\n")
+		or die "write error: $!\n";
+}
+
+sub devices_write {
+	my $fh = shift;
+	my $name = $self->name;
+
+	$fh->write("# qemu config file\n\n")
+		or die "write error: $!\n";
+
+	$self->devices_stanza($fh, chardev => 'monitor',
+		backend => 'socket',
+		server => 'on',
+		wait => 'off',
+		path => "$rundir/$name.monitor",
+	);
+	
+	$self->devices_stanza($fh, mon => 'monitor', 
+		mode => 'readline',
+		chardev => 'monitor',
+		default => 'on',
+	);
+
+	if(defined $self->serialport) {
+		for(my $i = 0; $i < 4; $i++) {
+			$self->devices_stanza($fh, chardev => "serial-$i",
+				backend => 'socket',
+				server => 'on',
+				wait => 'off',
+				path => "$rundir/$name.serial-$i",
+			);
+			$self->devices_stanza($fh, device => undef, 
+				driver => 'isa-serial',
+				chardev => "serial-$i",
+			);
+		}
+	}
+
+	if($self->virtio) {
+		$self->devices_stanza($fh, device => undef, driver => 'virtio-balloon');
+		$self->devices_stanza($fh, device => undef, driver => 'virtio-serial');
+		for(my $i = 0; $i < 8; $i++) {
+			$self->devices_stanza($fh, chardev => "console-$i",
+				backend => 'socket',
+				server => 'on',
+				wait => 'off',
+				path => "$rundir/$name.console-$i",
+			);
+			$self->devices_stanza($fh, device => undef, 
+				driver => 'virtconsole',
+				chardev => "console-$i",
+				name => "hvc$i",
+			);
+		}
+	}
+
+	my $nics = $self->nics;
+	my $nictype = $self->nictype;
+	my @vhost_net = (vhost => 'on')
+		if $self->vhost_net;
+	while(my ($i, $mac) = each @$nics) {
+		$self->devices_stanza($fh, netdev => "net-$i",
+			type => 'tap',
+			ifname => $name.$i,
+			@vhost_net,
+		);
+		$self->devices_stanza($fh, device => undef, 
+			driver => 'virtio-net',
+			netdev => "net-$i",
+			mac => $mac,
+		);
+	}
+
+	my $disks = $self->disks;
+	my $disktype = $self->disktype;
+	while(my ($i, $disk) = each @$disks) {
+		my $cache = $self->cache;
+		my $aio = $self->aio;
+		my %opt;
+		die "No such file or directory: $disk\n"
+			unless -e $disk;
+		if(-b _) {
+			$cache //= 'none';
+			$aio //= 'native';
+			$opt{format} = 'raw';
+		}
+		my $serial = substr(md5_base64($disk), 0, 20);
+		$serial =~ tr{+/}{XY};
+		$opt{serial} = $serial;
+		$opt{cache} = $cache if defined $cache;
+		$opt{aio} = $aio if defined $aio;
+		$self->devices_stanza($fh, drive => "blk-$i",
+			file => $disk,
+			if => 'none',
+			%opt
+		);
+		$self->devices_stanza($fh, device => undef, 
+			driver => $disktype,
+			drive => "blk-$i",
+		);
+	}
+}
+
+sub devices_file {
+	my $path = shift;
+	my $fh = new IO::File($path, '>')
+		or die "$path: $!\n";
+	$self->devices_write($fh);
+	$fh->flush or die "flush($path): $!\n";
+	$fh->sync or $!{EINVAL} or die "fsync($path): $!\n";;
+	$fh->close or die "close($path): $!\n";
 }

@@ -52,7 +52,7 @@ case $action in start)
 				echo -n " $i(r)"
 				mv "$state" "$spent"
 				sync
-				$program start "$i" -incoming "exec:$zcat '$spent' /dev/zero 2>/dev/null"
+				$program resume "$i" -incoming "exec:$zcat '$spent' /dev/zero 2>/dev/null"
 				sleep $stagger
 				none=
 			elif [ -e "/etc/$kavoom/$i.auto" ]

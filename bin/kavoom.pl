@@ -23,31 +23,6 @@ sub kvm {
 	return $kvm;
 }
 
-sub handle_status {
-	my $prog = join(' ', @_);
-	if(WIFEXITED($?)) {
-		my $status = WEXITSTATUS($?);
-		$exit_status = $status;
-		return undef unless $status;
-		die sprintf("%s exited with status %d\n", $prog, $status)
-	} elsif(WIFSIGNALED($?)) {
-		my $sig = WTERMSIG($?);
-		$exit_status = $sig;
-		die sprintf("%s killed with signal %d%s\n", $prog, $sig & 127, ($sig & 128) ? ' (core dumped)' : '')
-	} elsif(WIFSTOPPED($?)) {
-		my $sig = WSTOPSIG($?);
-		$exit_status = $sig;
-		die sprintf("%s stopped with signal %d\n", $prog, $sig)
-	}
-}
-
-sub run {
-	if(system(@_) == -1) {
-		die sprintf("running %s: %s\n", shift, $!);
-	}
-	return handle_status(shift);
-}
-
 my %tried;
 my @tried;
 my $configfile;
@@ -85,16 +60,31 @@ die "Can't find a configuration file. Tried:\n".join('', map {"\t$_\n"} @tried)
 
 KVM::Kavoom::configure($configfile);
 
+sub start_or_resume {
+	my $resume = shift;
+	my $name = shift;
+	my $kvm = kvm($name);
+	die "virtual machine $name already running\n"
+		if $kvm->running;
+	my $devices = $kvm->devices_path;
+	if($resume && !-f $devices) {
+		warn "kavoom: resume invoked but no devices file exists yet. creating it.\n";
+		$resume = 0;
+	}
+	$kvm->devices_file($devices) unless $resume;
+	my $cmd = $kvm->command(@_);
+	local $ENV{kavoom_id} = $kvm->id;
+	local $ENV{kavoom_name} = $kvm->name;
+	exec @$cmd;
+	die sprintf("running %s: %s\n", $cmd->[0], $!);
+}
+
 my %commands = (
 	start => sub {
-		my $kvm = &kvm;
-		my $name = $kvm->name;
-		die "virtual machine $name already running\n"
-			if $kvm->running;
-		my $cmd = $kvm->command(@_);
-		local $ENV{kavoom_id} = $kvm->id;
-		local $ENV{kavoom_name} = $kvm->name;
-		run(@$cmd);
+		start_or_resume(0, @_);
+	},
+	resume => sub {
+		start_or_resume(1, @_);
 	},
 	command => sub {
 		my $kvm = &kvm;
@@ -176,6 +166,18 @@ my %commands = (
 		my $kvm = &kvm;
 		$kvm->command;
 	},
+	devices => sub {
+		my $kvm = &kvm;
+		if(@_ == 0) {
+			$kvm->devices_write(\*STDOUT);
+		} elsif(@_ == 1) {
+			my $filename = shift;
+			eval { $kvm->devices_file($filename) };
+			die "$filename: $@" if $@;
+		} else {
+			die "too many arguments\n";
+		}
+	},
 );
 
 my $what = shift @ARGV;
@@ -222,6 +224,13 @@ Any extra arguments to this command are passed verbatim to kvm.
 =item C<kavoom> C<command> I<instance>
 
 Print the command as it would be executed by the C<start> command.
+
+=item C<kavoom> C<resume> I<instance> [I<kvm arguments>]
+
+Like the C<start> command, but only generates the kvm device file if
+it doesn't exist (and prints a warning in that case). Useful when
+resuming from a saved image: it helps to make sure the device list
+is still compatible with the saved image.
 
 =item C<kavoom> C<serial> I<instance>
 
