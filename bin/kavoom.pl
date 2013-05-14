@@ -281,6 +281,11 @@ exit code if and only if the instance is still running or an error occurred.
 Test the configuration for this instance. Returns a zero exit code
 if and only if no errors were encountered.
 
+=item C<kavoom> C<devices> [I<filename>]
+
+Write the kvm device configuration file to I<file> or to stdout if no file
+was specified.
+
 =back
 
 =head1 PATHS
