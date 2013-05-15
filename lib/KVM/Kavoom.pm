@@ -288,6 +288,7 @@ sub command {
 		-readconfig => $devices,
 		-daemonize,
 		-nodefaults,
+		-vga => 'cirrus',
 		-vnc => $vnc,
 	);
 
