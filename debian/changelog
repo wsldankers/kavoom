@@ -1,6 +1,6 @@
-kavoom (3.1~0) UNRELEASED; urgency=low
+kavoom (3.1) stable; urgency=low
 
-  * Use a file for device information
+  * Store device parameters in a file instead of using the command line
 
  -- Wessel Dankers <wsl@fruit.je>  Tue, 14 May 2013 20:16:38 +0200
 

@@ -8,7 +8,7 @@ use Module::Build;
 my $build = new Module::Build(
 	module_name => 'KVM::Kavoom',
 	dist_name => 'kavoom',
-	dist_version => '3.1~0',
+	dist_version => '3.1',
 	dist_abstract => 'Manage Linux KVM virtual machine instances',
 	dist_author => 'Wessel Dankers <wsl@fruit.je>',
 	license => 'perl',

@@ -1,3 +1,11 @@
+3.1
+	Store device parameters in a file instead of using the command line
+
+3.0
+	Convert kvm command line arguments to -device format
+	Always allocate 8 virtconsoles if virtio=yes
+	Always allocate 4 serial ports unless serial=none
+
 2.16
 	Use vhost_net if available
 	Improve packaging and build system
