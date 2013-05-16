@@ -1,3 +1,6 @@
+3.2
+	Disable virtconsole by default and add an option to enable it
+
 3.1
 	Store device parameters in a file instead of using the command line
 

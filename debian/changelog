@@ -1,4 +1,4 @@
-kavoom (3.2~0) UNRELEASED; urgency=low
+kavoom (3.2) stable; urgency=low
 
   * Disable virtconsole by default and add an option to enable it.
 
