@@ -242,7 +242,7 @@ bracket).
 
 Get access to the virtio console of an already running instance.
 You can leave the virtio console by typing C<^]> (control + right square
-bracket). Only available if the VM is configured with C<virtio> = I<yes>.
+bracket). Only available if the VM is configured with C<console> = I<yes>.
 
 =item C<kavoom> C<monitor> I<instance> [I<monitor command>]
 
@@ -412,7 +412,13 @@ C<-drive> instead. Otherwise, use C<disk>.
 =item C<virtio> = I<yes>/I<no>
 
 Use virtio for all disks and network interfaces. Your guest OS needs to
-support this.
+support this. This will also configure the memory ballooning device.
+Defaults to I<off>.
+
+=item C<console> = I<yes>/I<no>
+
+Allocate 8 virtconsole devices. Some guest OS'es (notably Debian wheezy)
+are unstable with these devices present. Defaults to I<off>.
 
 =item C<cache> = I<writeback>/I<writethrough>/I<off>
 

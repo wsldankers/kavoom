@@ -47,6 +47,7 @@ field disks => [];
 field nics => [];
 field extra => [];
 field virtio => undef;
+field virtconsole => undef;
 field cache => undef;
 field aio => undef;
 field serialport => 0;
@@ -190,6 +191,10 @@ sub set_serial {
 	} else {
 		die "unknown serial port '$_'\n";
 	}
+}
+
+sub set_virtconsole {
+	$self->virtconsole(bool(shift));
 }
 
 sub set_drive {
@@ -359,8 +364,8 @@ sub serial {
 sub console {
 	my $num = shift // 0;
 	my $path = $self->socket_path("console-$num");
-	die "console only available with virtio=yes\n"
-		unless $self->virtio || -e $self->socket_path('console-0');
+	die "console only available with virtio=yes and console=yes\n"
+		unless $self->virtconsole || -e $self->socket_path('console-0');
 	return $self->socket("console-$num");
 }
 
@@ -433,8 +438,10 @@ sub devices_write {
 		}
 	}
 
-	if($self->virtio) {
-		$self->devices_stanza($fh, device => undef, driver => 'virtio-balloon');
+	$self->devices_stanza($fh, device => undef, driver => 'virtio-balloon')
+		if $self->virtio;
+
+	if($self->virtconsole) {
 		$self->devices_stanza($fh, device => undef, driver => 'virtio-serial');
 		for(my $i = 0; $i < 8; $i++) {
 			$self->devices_stanza($fh, chardev => "console-$i",

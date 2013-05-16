@@ -1,3 +1,9 @@
+kavoom (3.2~0) UNRELEASED; urgency=low
+
+  * Disable virtconsole by default and add an option to enable it.
+
+ -- Wessel Dankers <wsl@fruit.je>  Thu, 16 May 2013 19:59:47 +0200
+
 kavoom (3.1) stable; urgency=low
 
   * Store device parameters in a file instead of using the command line

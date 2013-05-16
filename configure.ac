@@ -1,4 +1,4 @@
-AC_INIT([kavoom], [3.1])
+AC_INIT([kavoom], [3.2])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR(bin/kavoom.pl)
 
