@@ -1,0 +1,5 @@
+# $stopaction determines what happens when kavoom is stopped. Possible values:
+# 	savestate - virtual machines are suspended to disk and resumed later
+#	shutdown - virtual machines are shut down using an ACPI shutdown event
+# The default is 'savestate'.
+#stopaction=shutdown
