@@ -193,7 +193,7 @@ sub set_serial {
 	}
 }
 
-sub set_virtconsole {
+sub set_console {
 	$self->virtconsole(bool(shift));
 }
 
@@ -364,7 +364,7 @@ sub serial {
 sub console {
 	my $num = shift // 0;
 	my $path = $self->socket_path("console-$num");
-	die "console only available with virtio=yes and console=yes\n"
+	die "console only available with console=yes\n"
 		unless $self->virtconsole || -e $self->socket_path('console-0');
 	return $self->socket("console-$num");
 }
