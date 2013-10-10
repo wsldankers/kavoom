@@ -352,6 +352,10 @@ sub monitor {
 	return $self->socket('monitor');
 }
 
+sub qmp {
+	return $self->socket('qmp');
+}
+
 sub serial {
 	my $num = shift;
 	my $serialport = $self->serialport;
@@ -421,6 +425,19 @@ sub devices_write {
 		mode => 'readline',
 		chardev => 'monitor',
 		default => 'on',
+	);
+
+	$self->devices_stanza($fh, chardev => 'qmp',
+		backend => 'socket',
+		server => 'on',
+		wait => 'off',
+		path => "$rundir/$name.qmp",
+	);
+	
+	$self->devices_stanza($fh, mon => 'qmp', 
+		mode => 'control',
+		chardev => 'qmp',
+		pretty => 'on',
 	);
 
 	if(defined $self->serialport) {
