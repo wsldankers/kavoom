@@ -486,7 +486,7 @@ sub devices_write {
 			@vhost_net,
 		);
 		$self->devices_stanza($fh, device => undef, 
-			driver => 'virtio-net',
+			driver => $self->nictype,
 			netdev => "net-$i",
 			mac => $mac,
 		);
