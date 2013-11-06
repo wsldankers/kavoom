@@ -520,6 +520,14 @@ sub devices_write {
 			drive => "blk-$i",
 		);
 	}
+
+	$self->devices_stanza($fh, drive => 'cdrom',
+		if => 'none',
+	);
+	$self->devices_stanza($fh, device => 'ide0-cd1',
+		driver => 'ide-cd',
+		drive => 'cdrom',
+	);
 }
 
 sub devices_file {
