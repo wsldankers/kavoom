@@ -447,8 +447,6 @@ kavoom_name: the name of the vm being started
 
 kavoom_id: the numeric ID of the vm being started
 
-=item 
-
 =back
 
 You can also specify kvm command line options directly, one per line.
