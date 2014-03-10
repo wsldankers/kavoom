@@ -486,7 +486,7 @@ sub devices_write {
 			@vhost_net,
 		);
 		$self->devices_stanza($fh, device => undef, 
-			driver => $self->nictype,
+			driver => $nictype,
 			netdev => "net-$i",
 			mac => $mac,
 		);
@@ -521,13 +521,13 @@ sub devices_write {
 		);
 	}
 
-	$self->devices_stanza($fh, drive => 'cdrom',
-		if => 'none',
-	);
-	$self->devices_stanza($fh, device => 'ide0-cd1',
-		driver => 'ide-cd',
-		drive => 'cdrom',
-	);
+#	$self->devices_stanza($fh, drive => 'cdrom',
+#		if => 'none',
+#	);
+#	$self->devices_stanza($fh, device => 'ide0-cd1',
+#		driver => 'ide-cd',
+#		drive => 'cdrom',
+#	);
 }
 
 sub devices_file {
