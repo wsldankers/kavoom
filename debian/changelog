@@ -1,3 +1,15 @@
+kavoom (3.3) stable; urgency=low
+
+  * Rename virtconsole to just console.
+
+  * Add /etc/default/kavoom file.
+
+  * Add a QMP socket for each VM.
+
+  * Fix bug that caused virtio-net to be used even with virtio=no
+
+ -- Wessel Dankers <wsl@fruit.je>  Mon, 10 Mar 2014 14:43:14 +0100
+
 kavoom (3.2) stable; urgency=low
 
   * Disable virtconsole by default and add an option to enable it.
