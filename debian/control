@@ -17,7 +17,7 @@ Description: Manage KVM instances
 Package: libkvm-kavoom-perl
 Architecture: all
 Section: perl
-Depends: ${misc:Depends}, ${perl:Depends}, libexpect-perl, libclarity-perl, libdigest-md5-perl
+Depends: ${misc:Depends}, ${perl:Depends}, libexpect-perl, libclass-clarity-perl, libdigest-md5-perl
 Description: Manage KVM instances
  Manage KVM instances using configuration files and start/stop/monitor
  commands.

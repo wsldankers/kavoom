@@ -4,7 +4,7 @@ use utf8;
 
 package KVM::Kavoom;
 
-use Clarity -self;
+use Class::Clarity -self;
 use IO::File;
 use IO::Socket::UNIX;
 use Fcntl;
@@ -87,7 +87,6 @@ sub new {
 }
 
 field id => sub {
-	my $self = shift;
 	my $name = $self->name;
 
 	if(my $idfile = new IO::File("$statedir/$name.id", '<')) {
