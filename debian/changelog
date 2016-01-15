@@ -1,3 +1,11 @@
+kavoom (3.4) stable; urgency=medium
+
+  * Assign an ID to all devices.
+
+  * Switch to Class::Clarity.
+
+ -- Wessel Dankers <wsl@uvt.nl>  Fri, 15 Jan 2016 14:31:32 +0100
+
 kavoom (3.3) stable; urgency=low
 
   * Rename virtconsole to just console.
