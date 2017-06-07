@@ -2,7 +2,7 @@ use strict;
 use warnings FATAL => 'all';
 use utf8;
 
-package KVM::Kavoom;
+package KVM::Kavoom::Instance;
 
 use Class::Clarity -self;
 use IO::File;
@@ -11,54 +11,33 @@ use Fcntl;
 use Expect;
 use Digest::MD5 qw(md5_base64);
 
-our $configdir;
-our $statedir;
-our $rundir;
-our $kvm = 'kvm';
+field config;
+field name;
 
-sub configure() {
-	my $file = shift;
-
-	my %paths = (
-		configdir => \$configdir,
-		statedir => \$statedir,
-		rundir => \$rundir,
-		kvm => \$kvm,
-	);
-
-	my $cfg = new IO::File($file, '<:utf8')
-		or die "$file: $!\n";
-
-	while(defined(local $_ = $cfg->getline)) {
-		next if /^\s*($|#)/;
-		my ($key, $val) = split('=', $_, 2);
-		die "Malformed line at $file:$.\n"
-			unless defined $val;
-		trim($key, $val);
-
-		die "Unknown configuration key '$key' at $file:@{[$cfg->input_line_number]}\n"
-			unless exists $paths{$key};
-		${$paths{$key}} = $val
+sub configvar(*@) {
+    my $name = shift;
+	if(@_) {
+		my $postproc = shift;
+		field($name, eval qq{sub { my \$self = shift; return $postproc(\$self->config->$name(@_)) }});
+	} else {
+		field($name, eval qq{sub { my \$self = shift; return \$self->config->$name(@_) }});
 	}
 }
 
-field name;
-field disks => [];
-field nics => [];
-field extra => [];
-field virtio => undef;
-field virtconsole => undef;
-field cache => undef;
-field aio => undef;
-field serialport => 0;
-field kvm => sub { $kvm };
-field vhost_net => sub { -e '/dev/vhost-net' };
-field vnc => undef;
-field mem => undef;
-field cpus => undef;
-field acpi => 1;
-
-field hugepages => sub {
+configvar disks;
+configvar nics;
+configvar extra;
+configvar virtio;
+configvar virtconsole;
+configvar cache;
+configvar aio;
+configvar serialport;
+configvar kvm;
+configvar vnc;
+configvar mem;
+configvar cpus;
+configvar acpi;
+configvar hugepages => sub {
 	my $hugepages;
 
 	my $mtab = new IO::File('/proc/mounts', '<')
@@ -74,17 +53,6 @@ field hugepages => sub {
 
 	return $hugepages;
 };
-
-sub new {
-	my $name = shift;
-	die unless defined $name;
-
-	die unless defined $configdir;
-	die unless defined $statedir;
-	die unless defined $rundir;
-
-	return super(name => $name);
-}
 
 field id => sub {
 	my $name = $self->name;

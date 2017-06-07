@@ -6,7 +6,9 @@ use utf8;
 
 use POSIX qw(_exit setsid :sys_wait_h);
 use IO::Handle;
-use KVM::Kavoom;
+use KVM::Kavoom::Config::Global;
+use KVM::Kavoom::Config::Instance;
+use KVM::Kavoom::Instance;
 
 our $PACKAGE //= 'kavoom';
 our $VERSION //= 'git';
@@ -15,16 +17,9 @@ our $sysconfdir;
 
 my $exit_status;
 
-sub kvm {
-	my $name = shift;
-	die "missing kvm name\n" unless defined $name;
-	my $kvm = new KVM::Kavoom($name);
-	$kvm->config;
-	return $kvm;
-}
-
 my %tried;
 my @tried;
+my $configdir;
 my $configfile;
 
 sub concat {
@@ -47,18 +42,35 @@ foreach(
 	undef $tried{$_};
 	push @tried, $_;
 	next unless -e;
+	unless(-f _) {
+		warn "kavoom: skipping $_ (not a file)\n";
+		next;
+	}
 	unless(-r _) {
-		warn "Skipping unreadable $_\n";
+		warn "kavoom: skipping $_ (unreadable)\n";
 		next;
 	}
 	$configfile = $_;
+	$configdir = $_;
+	$configdir =~ s{/[^/]+$}{}a;
+	$configdir = '.' if $configdir eq '';
 	last;
 }
 
-die "Can't find a configuration file. Tried:\n".join('', map {"\t$_\n"} @tried)
+die "can't find a configuration file. Tried:\n".join('', map {"\t$_\n"} @tried)
 	unless defined $configfile;
 
-KVM::Kavoom::configure($configfile);
+my $global = new KVM::Config::Global(configdir => $configdir, load => $configfile);
+
+sub kvm {
+	my $name = shift;
+	die "missing kvm name\n" unless defined $name;
+	my $configdir = $global->configdir;
+	my $cfg = new KVM::Kavoom::Config::Instance(template => $global, load => "$configdir/$name.cfg");
+	my $kvm = new KVM::Kavoom::Instance(name => $name, cfg => $cfg);
+	$kvm->config;
+	return $kvm;
+}
 
 sub start_or_resume {
 	my $resume = shift;

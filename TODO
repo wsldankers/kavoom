@@ -1,0 +1,11 @@
+- Config has AUTOLOAD
+	defers to ->template if ->template_isset
+	otherwise throws "unknown setting" if the method starts with set_
+
+- Config::Common only contains set_ options and simple getters
+
+- Config::Global adds several global-only options
+
+- Config::Instance adds several instance-only options
+
+
