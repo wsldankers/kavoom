@@ -30,14 +30,8 @@ sub merge(*@) {
     my $name = shift;
 	if(@_) {
 		my $postproc = shift;
-		my $type = Scalar::Util::reftype($postproc);
-		if(!defined $type) {
-			my $scalar = $postproc;
-			$postproc = sub {
-				my $self = shift;
-				return @_ ? shift : $scalar;
-			};
-		} elsif($type eq 'ARRAY') {
+		my $type = Scalar::Util::reftype($postproc) // '';
+		if($type eq 'ARRAY') {
 			my $factory = Class::Clarity::Factory::factory($postproc);
 			$postproc = sub {
 				my $self = shift;
@@ -74,7 +68,6 @@ sub merge(*@) {
 				return $postproc->($self);
 			}
 		});
-
 	} else {
 		field($name, sub {
 			my $self = shift;
