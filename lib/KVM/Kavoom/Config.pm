@@ -32,9 +32,10 @@ sub merge(*@) {
 		my $postproc = shift;
 		my $type = Scalar::Util::reftype($postproc);
 		if(!defined $type) {
+			my $scalar = $postproc;
 			$postproc = sub {
 				my $self = shift;
-				return @_ ? shift : undef;
+				return @_ ? shift : $scalar;
 			};
 		} elsif($type eq 'ARRAY') {
 			my $factory = Class::Clarity::Factory::factory($postproc);
