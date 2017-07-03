@@ -67,8 +67,7 @@ sub kvm {
 	die "missing kvm name\n" unless defined $name;
 	my $configdir = $globalcfg->configdir;
 	my $cfg = new KVM::Kavoom::Config::Instance(template => $globalcfg, load => "$configdir/$name.cfg");
-	my $kvm = new KVM::Kavoom::Instance(name => $name, globalcfg => $globalcfg, cfg => $cfg);
-	return $kvm;
+	return new KVM::Kavoom::Instance(name => $name, config => $cfg);
 }
 
 sub start_or_resume {

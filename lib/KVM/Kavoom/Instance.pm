@@ -18,7 +18,7 @@ sub configvar(*@) {
     my $name = shift;
 	if(@_) {
 		my $postproc = shift;
-		field($name, eval qq{sub { my \$self = shift; return $postproc(\$self->config->$name(@_)) }});
+		field($name, eval qq{sub { my \$self = shift; return \$postproc->(\$self->config->$name(@_)) }});
 	} else {
 		field($name, eval qq{sub { my \$self = shift; return \$self->config->$name(@_) }});
 	}
