@@ -60,15 +60,14 @@ foreach(
 die "can't find a configuration file. Tried:\n".join('', map {"\t$_\n"} @tried)
 	unless defined $configfile;
 
-my $global = new KVM::Config::Global(configdir => $configdir, load => $configfile);
+my $globalcfg = new KVM::Kavoom::Config::Global(configdir => $configdir, load => $configfile);
 
 sub kvm {
 	my $name = shift;
 	die "missing kvm name\n" unless defined $name;
-	my $configdir = $global->configdir;
-	my $cfg = new KVM::Kavoom::Config::Instance(template => $global, load => "$configdir/$name.cfg");
-	my $kvm = new KVM::Kavoom::Instance(name => $name, cfg => $cfg);
-	$kvm->config;
+	my $configdir = $globalcfg->configdir;
+	my $cfg = new KVM::Kavoom::Config::Instance(template => $globalcfg, load => "$configdir/$name.cfg");
+	my $kvm = new KVM::Kavoom::Instance(name => $name, globalcfg => $globalcfg, cfg => $cfg);
 	return $kvm;
 }
 

@@ -5,16 +5,18 @@ use KVM::Kavoom::Config -self;
 field disks => [];
 field nics => [];
 merge extra => [];
-field virtio => undef;
-field virtconsole => undef;
-field cache => undef;
-field aio => undef;
-field serialport => 0;
+merge virtio => undef;
+merge virtconsole => undef;
+merge cache => undef;
+merge aio => undef;
+merge serialport => 0;
+merge mem => undef;
+merge cpus => undef;
+merge acpi => 1;
 merge kvm;
 merge vnc => undef;
-field mem => undef;
-field cpus => undef;
-field acpi => 1;
+merge statedir;
+merge rundir;
 
 field hugepages => undef;
 
@@ -82,4 +84,18 @@ sub set_virtio {
 
 sub set_kvm {
 	$self->kvm(shift);
+}
+
+sub set_statedir {
+	my $value = shift;
+	die "state directory '$value' does not exist\n" unless -e $value;
+	die "state directory '$value' is not a directory\n" unless -d $value;
+	$self->statedir($value);
+}
+
+sub set_rundir {
+	my $value = shift;
+	die "run directory '$value' does not exist\n" unless -e $value;
+	die "run directory '$value' is not a directory\n" unless -d $value;
+	$self->rundir($value);
 }

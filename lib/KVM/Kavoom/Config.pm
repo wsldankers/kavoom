@@ -31,7 +31,12 @@ sub merge(*@) {
 	if(@_) {
 		my $postproc = shift;
 		my $type = Scalar::Util::reftype($postproc);
-		if($type eq 'ARRAY') {
+		if(!defined $type) {
+			$postproc = sub {
+				my $self = shift;
+				return @_ ? shift : undef;
+			};
+		} elsif($type eq 'ARRAY') {
 			my $factory = Class::Clarity::Factory::factory($postproc);
 			$postproc = sub {
 				my $self = shift;
@@ -140,7 +145,8 @@ sub AUTOLOAD {
 	confess("no package name in '$name'")
 		if $off == -1;
 	my $pkg = substr($name, 0, $off + 2, '');
-	if(my $template = $self->template) {
+	if($self->template_isset) {
+		my $template = $self->template;
 		return $template->$name(@_) if $template->can($name);
 	}
 	die "unknown configuration parameter\n"

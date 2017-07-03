@@ -24,6 +24,9 @@ sub configvar(*@) {
 	}
 }
 
+configvar configdir;
+configvar statedir;
+configvar rundir;
 configvar disks;
 configvar nics;
 configvar extra;
@@ -57,6 +60,7 @@ configvar hugepages => sub {
 field id => sub {
 	my $name = $self->name;
 
+	my $statedir = $self->statedir;
 	if(my $idfile = new IO::File("$statedir/$name.id", '<')) {
 		my $line = $idfile->getline;
 		chomp $line;
@@ -201,42 +205,8 @@ sub disktype {
 	return $self->virtio ? 'virtio-blk' : 'ide-hd';
 }
 
-sub config {
-	my $name = $self->name;
-	my $file = @_ ? shift : "$configdir/$name.cfg";
-
-	my $cfg = new IO::File($file, '<')
-		or die "Can't open $file: $!\n";
-
-	while(defined(local $_ = $cfg->getline)) {
-		next if /^\s*($|#)/;
-		trim($_);
-		if(ord == 45) { # -
-			my ($key, $val) = split(' ', $_, 2);
-			my $extra = $self->extra;
-			push @$extra, $key;
-			push @$extra, $val if defined $val;
-		} else {
-			eval {
-				my ($key, $val) = split('=', $_, 2);
-				die "malformed line\n"
-					unless defined $val;
-				trim($key, $val);
-				my $lkey = 'set_'.lc($key);
-				die "unknown configuration parameter '$key'\n"
-					unless $self->can($lkey);
-				eval { $self->$lkey($val) };
-				die "$key: $@" if $@;
-			};
-			if(my $err = $@) {
-				my $line = $cfg->input_line_number;
-				die "$file:$line: $@";
-			}
-		}
-	}
-}
-
 sub running {
+	my $rundir = $self->rundir;
 	my $name = $self->name;
 	my $fh = new IO::File("$rundir/$name.pid", '+<');
 	return undef unless $fh;
@@ -250,6 +220,7 @@ sub running {
 
 sub command {
 	my $devices = $self->devices_path;
+	my $rundir = $self->rundir;
 	my $name = $self->name;
 	my $id = $self->id;
 	my $vnc = $self->vnc ? "localhost:$id" : 'none';
@@ -294,6 +265,7 @@ sub sh {
 
 sub socket_path {
 	my $type = shift;
+	my $rundir = $self->rundir;
 	my $name = $self->name;
 	return "$rundir/$name.$type";
 }
@@ -341,6 +313,7 @@ sub console {
 }
 
 sub devices_path {
+	my $statedir = $self->statedir;
 	my $name = $self->name;
 	return "$statedir/$name.devices";
 }
@@ -376,6 +349,7 @@ sub devices_stanza {
 
 sub devices_write {
 	my $fh = shift;
+	my $rundir = $self->rundir;
 	my $name = $self->name;
 
 	$fh->write("# qemu config file\n\n")
