@@ -89,13 +89,13 @@ sub set_kvm {
 sub set_statedir {
 	my $value = shift;
 	die "state directory '$value' does not exist\n" unless -e $value;
-	die "state directory '$value' is not a directory\n" unless -d $value;
+	die "state directory '$value' is not a directory\n" unless -d _;
 	$self->statedir($value);
 }
 
 sub set_rundir {
 	my $value = shift;
 	die "run directory '$value' does not exist\n" unless -e $value;
-	die "run directory '$value' is not a directory\n" unless -d $value;
+	die "run directory '$value' is not a directory\n" unless -d _;
 	$self->rundir($value);
 }

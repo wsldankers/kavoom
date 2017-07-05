@@ -6,6 +6,8 @@ use utf8;
 
 use POSIX qw(_exit setsid :sys_wait_h);
 use IO::Handle;
+use FindBin;
+use File::Basename qw(dirname);
 use KVM::Kavoom::Config::Global;
 use KVM::Kavoom::Config::Instance;
 use KVM::Kavoom::Instance;
@@ -28,16 +30,16 @@ sub concat {
 }
 
 foreach(
-			$ENV{KAVOOMRC},
+			concat($ENV{KAVOOMRC}),
 			concat($ENV{HOME}, '.kavoomrc'),
 			concat($sysconfdir, 'kavoom.cfg'),
-			concat($prefix, 'etc', 'kavoom.cfg'),
+			concat($prefix, 'etc/kavoom.cfg'),
+			concat(dirname($FindBin::Bin), 'etc/kavoom.cfg'),
 			'/etc/kavoom.cfg',
 			'/usr/local/etc/kavoom.cfg',
-			"/opt/$PACKAGE/etc/kavoom.cfg",
 			"/opt/$PACKAGE-$VERSION/etc/kavoom.cfg",
+			"/opt/$PACKAGE/etc/kavoom.cfg",
 		) {
-	next unless defined;
 	next if exists $tried{$_};
 	undef $tried{$_};
 	push @tried, $_;
@@ -347,6 +349,9 @@ Usually F</usr/bin/kvm> or F<kvm>.
 
 May be overridden by a vm configuration file.
 
+You may also specify VM options in this file (see below). These will serve
+as defaults for all VMs.
+
 =back
 
 =head1 CONFIGURATION
@@ -499,7 +504,7 @@ Wessel Dankers <wsl@fruit.je>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2009 Wessel Dankers <L<wsl@fruit.je|mailto:wsl@fruit.je>>
+Copyright (c) 2009-2017 Wessel Dankers <L<wsl@fruit.je>>
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

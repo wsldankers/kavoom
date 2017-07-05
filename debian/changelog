@@ -1,3 +1,9 @@
+kavoom (4.0) UNRELEASED; urgency=medium
+
+  * Allow VM options in global configuration file.
+
+ -- Wessel Dankers <wsl@uvt.nl>  Mon, 03 Jul 2017 16:51:33 +0200
+
 kavoom (3.4) stable; urgency=medium
 
   * Assign an ID to all devices.
