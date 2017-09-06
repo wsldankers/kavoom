@@ -443,7 +443,7 @@ sub devices_write {
 			unless -e $disk;
 		if(-b _) {
 			$cache //= 'none';
-			$aio //= 'native';
+			$aio //= 'native' if $cache eq 'none';
 			$opt{format} = 'raw';
 		}
 		my $serial = substr(md5_base64($disk), 0, 20);
@@ -454,7 +454,7 @@ sub devices_write {
 		$self->devices_stanza($fh, drive => "blk-$i",
 			file => $disk,
 			if => 'none',
-			%opt
+			%opt,
 		);
 		$self->devices_stanza($fh, device => "blk-$i", 
 			driver => $disktype,
