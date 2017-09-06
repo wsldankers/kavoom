@@ -108,6 +108,8 @@ field id => sub {
 	return $id;
 };
 
+field vhost_net => sub { -e '/dev/vhost-net' };
+
 sub trim() {
 	foreach(@_) {
 		s/(^\s+|\s+$)//g;
