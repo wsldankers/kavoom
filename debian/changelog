@@ -1,6 +1,10 @@
-kavoom (4.0) UNRELEASED; urgency=medium
+kavoom (4.0) stable; urgency=medium
 
   * Allow VM options in global configuration file.
+
+  * Fix init script dependencies.
+
+  * Obey aio restrictions.
 
  -- Wessel Dankers <wsl@uvt.nl>  Mon, 03 Jul 2017 16:51:33 +0200
 
