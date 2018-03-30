@@ -13,10 +13,13 @@ merge serialport => 0;
 merge mem => undef;
 merge cpus => undef;
 merge acpi => 1;
-merge kvm;
 merge vnc => undef;
+merge tablet => undef;
+merge firmware => 'mbr';
+merge ovmfdir => '/usr/share/OVMF';
 merge statedir;
 merge rundir;
+merge kvm;
 
 field hugepages => undef;
 
@@ -42,11 +45,11 @@ sub set_tablet {
 
 sub set_serial {
 	local $_ = shift;
-	if(/^(?:ttyS)?(\d+)$/) {
+	if(/^(?:ttyS)?(\d+)\z/) {
 		$self->serialport(int($1));
-	} elsif(/^(?:COM)([1-9]\d*)$/) {
+	} elsif(/^(?:COM)([1-9]\d*)\z/) {
 		$self->serialport(int($1) - 1);
-	} elsif(/^none$/i) {
+	} elsif($_ eq 'none') {
 		$self->serialport(undef);
 	} else {
 		die "unknown serial port '$_'\n";
@@ -82,8 +85,20 @@ sub set_virtio {
 	$self->virtio(bool(shift));
 }
 
-sub set_kvm {
-	$self->kvm(shift);
+sub set_firmware {
+	local $_ = lc(shift);
+	if(/^(?:mbr|efi)\z/) {
+		$self->firmware($_);
+	} else {
+		die "unknown firmware type '$_' (possible values: mbr, efi)\n";
+	}
+}
+
+sub set_ovmfdir {
+	my $value = shift;
+	die "OVMF directory '$value' does not exist\n" unless -e $value;
+	die "OVMF directory '$value' is not a directory\n" unless -d _;
+	$self->ovmfdir($value);
 }
 
 sub set_statedir {
@@ -98,4 +113,8 @@ sub set_rundir {
 	die "run directory '$value' does not exist\n" unless -e $value;
 	die "run directory '$value' is not a directory\n" unless -d _;
 	$self->rundir($value);
+}
+
+sub set_kvm {
+	$self->kvm(shift);
 }

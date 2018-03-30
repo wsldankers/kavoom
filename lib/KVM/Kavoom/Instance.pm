@@ -7,6 +7,7 @@ package KVM::Kavoom::Instance;
 use Class::Clarity -self;
 use IO::File;
 use IO::Socket::UNIX;
+use File::Copy qw(copy);
 use Fcntl;
 use Expect;
 use Digest::MD5 qw(md5_base64);
@@ -40,6 +41,8 @@ configvar vnc;
 configvar mem;
 configvar cpus;
 configvar acpi;
+configvar firmware;
+configvar ovmfdir;
 configvar hugepages => sub {
 	my $hugepages;
 
@@ -110,93 +113,11 @@ field id => sub {
 
 field vhost_net => sub { -e '/dev/vhost-net' };
 
-sub trim() {
-	foreach(@_) {
-		s/(^\s+|\s+$)//g;
-		s/\s+/ /;
-	}
-}
-
-sub bool() {
-	local $_ = shift;
-	die "missing value\n" unless defined;
-	return 1 if /^(?:on|yes|1|enabled?|true)$/i;
-	return 0 if /^(?:off|no|0|disabled?|false)$/i;
-	die "unable to parse '$_' as a boolean value\n";
-}
-
-sub set_mem {
-	$self->mem(int(shift));
-}
-
-sub set_cpus {
-	$self->cpus(int(shift));
-}
-
-sub set_mac {
-	my $nics = $self->nics;
-	push @$nics, shift;
-}
-
-sub set_vnc {
-	$self->vnc(bool(shift));
-}
-
-sub set_tablet {
-	$self->tablet(bool(shift));
-}
-
 sub tablet {
 	return $self->{tablet} = bool(shift) if @_;
 	return exists $self->{tablet}
 		? $self->{tablet}
 		: $self->{vnc};
-}
-
-sub set_serial {
-	local $_ = shift;
-	if(/^(?:ttyS)?(\d+)$/) {
-		$self->serialport(int($1));
-	} elsif(/^(?:COM)([1-9]\d*)$/) {
-		$self->serialport(int($1) - 1);
-	} elsif(/^none$/i) {
-		$self->serialport(undef);
-	} else {
-		die "unknown serial port '$_'\n";
-	}
-}
-
-sub set_console {
-	$self->virtconsole(bool(shift));
-}
-
-sub set_drive {
-	my $drive = shift;
-	my ($p) = map { s/^file=// ? $_ : () } split(',', $drive);
-	die "can't parse deprecated drive= statement\n"
-		unless $p;
-	$self->disk($p);
-	warn "WARNING: interpreting deprecated drive=$drive as disk=$p\n";
-}
-
-sub set_disk {
-	push @{$self->disks}, shift;
-}
-
-sub set_cache {
-	$self->cache(shift);
-}
-
-sub set_acpi {
-	$self->acpi(bool(shift));
-}
-
-sub set_virtio {
-	$self->virtio(bool(shift));
-}
-
-sub set_kvm {
-	$self->kvm(shift);
 }
 
 sub nictype {
@@ -236,14 +157,6 @@ sub command {
 		-vga => 'cirrus',
 		-vnc => $vnc,
 	);
-
-	my $cpus = $self->cpus;
-	push @cmd, -smp => $cpus
-		if defined $cpus;
-
-	my $mem = $self->mem;
-	push @cmd, -m => $mem
-		if defined $mem;
 
 	push @cmd, '-no-acpi'
 		if !$self->acpi;
@@ -352,10 +265,21 @@ sub devices_stanza {
 sub devices_write {
 	my $fh = shift;
 	my $rundir = $self->rundir;
+	my $statedir = $self->statedir;
 	my $name = $self->name;
 
 	$fh->write("# qemu config file\n\n")
 		or die "write error: $!\n";
+
+	$self->devices_stanza($fh, name => undef, guest => $name);
+
+	my $cpus = $self->cpus;
+	$self->devices_stanza($fh, 'smp-opts' => undef, cpus => $cpus)
+		if defined $cpus;
+
+	my $mem = $self->mem;
+	$self->devices_stanza($fh, memory => undef, size => $mem)
+		if defined $mem;
 
 	$self->devices_stanza($fh, chardev => 'monitor',
 		backend => 'socket',
@@ -461,6 +385,37 @@ sub devices_write {
 		$self->devices_stanza($fh, device => "blk-$i", 
 			driver => $disktype,
 			drive => "blk-$i",
+		);
+	}
+
+	my $firmware = $self->firmware;
+	if($firmware eq 'efi') {
+		my $ovmfdir = $self->ovmfdir;
+		die "'$ovmfdir/OVMF_CODE.fd' not found\n"
+			unless -f "$ovmfdir/OVMF_CODE.fd";
+		$self->devices_stanza($fh, drive => "efi-code",
+			if => 'pflash',
+			file => "$ovmfdir/OVMF_CODE.fd",
+			format => 'raw',
+			readonly => 'on',
+		);
+		unless(-e "$statedir/$name.efi") {
+			die "'$ovmfdir/OVMF_VARS.fd' not found\n"
+				unless -f "$ovmfdir/OVMF_VARS.fd";
+			my $fh = new IO::File("$statedir/$name.efi.new", '>:raw')
+				or die "open($statedir/$name.efi.new): $!\n";
+			copy("$ovmfdir/OVMF_VARS.fd", $fh)
+				or die "copy($ovmfdir/OVMF_VARS.fd, $statedir/$name.efi.new): $!\n";
+			$fh->flush or die "write($statedir/$name.efi.new): $!\n";
+			$fh->sync or die "fsync($statedir/$name.efi.new): $!\n";
+			$fh->close or die "close($statedir/$name.efi.new): $!\n";
+			rename("$statedir/$name.efi.new", "$statedir/$name.efi")
+				or die "rename($statedir/$name.efi.new, $statedir/$name.efi): $!\n";
+		}
+		$self->devices_stanza($fh, drive => "efi-vars",
+			if => 'pflash',
+			file => "$statedir/$name.efi",
+			format => 'raw',
 		);
 	}
 
