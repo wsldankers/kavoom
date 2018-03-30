@@ -124,7 +124,7 @@ sub can {
 		return UNIVERSAL::can($self, @_);
 	}
 
-	if(my $template = $self->template) {
+	if($self->template_isset) {
 		my $method = shift;
 		return sub { shift; $self->$method(@_) };
 	}
