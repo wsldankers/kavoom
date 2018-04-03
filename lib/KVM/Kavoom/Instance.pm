@@ -291,7 +291,6 @@ sub devices_write {
 	$self->devices_stanza($fh, mon => 'monitor', 
 		mode => 'readline',
 		chardev => 'monitor',
-		default => 'on',
 	);
 
 	$self->devices_stanza($fh, chardev => 'qmp',
