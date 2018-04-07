@@ -1,8 +1,6 @@
-use strict;
-use warnings FATAL => 'all';
-use utf8;
-
 package KVM::Kavoom::Instance;
+
+use re '/aa';
 
 use Class::Clarity -self;
 use IO::File;
@@ -31,6 +29,7 @@ configvar rundir;
 configvar disks;
 configvar nics;
 configvar extra;
+configvar sections;
 configvar virtio;
 configvar virtconsole;
 configvar cache;
@@ -41,7 +40,7 @@ configvar vnc;
 configvar mem;
 configvar cpus;
 configvar acpi;
-configvar firmware;
+configvar platform;
 configvar ovmfdir;
 configvar hugepages => sub {
 	my $hugepages;
@@ -60,17 +59,29 @@ configvar hugepages => sub {
 	return $hugepages;
 };
 
-field id => sub {
+field lock => sub {
 	my $name = $self->name;
-
 	my $statedir = $self->statedir;
+
+	my $statedir_lock = new IO::File($statedir)
+		or die "open($statedir): $!\n";
+	flock($statedir_lock, Fcntl::LOCK_EX)
+		or die "flock($statedir): $!\n";
+
 	if(my $idfile = new IO::File("$statedir/$name.id", '<')) {
+		flock($idfile, Fcntl::LOCK_EX)
+			or die "flock($statedir): $!\n";
+		$statedir_lock->close or die;
+
 		my $line = $idfile->getline;
 		chomp $line;
-		die "Can't parse pid '$line' from $statedir/$name.id\n"
-			unless $line =~ /^(?:0|[1-9]\d*)$/;
-		$idfile->close or die;
-		return int($line);
+		die "can't parse pid '$line' from $statedir/$name.id\n"
+			unless $line =~ /^(?:0|[1-9]\d*)\z/;
+		my $id = int($line);
+		die "can't parse pid '$line' from $statedir/$name.id\n"
+			unless "$id" eq $line;
+
+		return [$id, $idfile];
 	}
 
 	die "$statedir/$name.id: $!\n"
@@ -90,26 +101,30 @@ field id => sub {
 	my $id = $seq++;
 
 	my $seqfile = new IO::File("$statedir/.seq,new", '>')
-		or die "Can't open $statedir/.seq,new for writing: $!\n";
+		or die "can't open $statedir/.seq,new for writing: $!\n";
 	$seqfile->write("$seq\n") or die "$statedir/.seq,new: $!\n";
 	$seqfile->flush or die "$statedir/.seq,new: $!\n";
 	$seqfile->sync or die "$statedir/.seq,new: $!\n";
 	$seqfile->close or die "$statedir/.seq,new: $!\n";
 
 	my $idfile = new IO::File("$statedir/$name.id,new", '>')
-		or die "Can't open $statedir/$name.id,new for writing: $!\n";
+		or die "can't open $statedir/$name.id,new for writing: $!\n";
 	$idfile->write("$id\n") or die "$statedir/$name.id,new: $!\n";
 	$idfile->flush or die "$statedir/$name.id,new: $!\n";
 	$idfile->sync or die "$statedir/$name.id,new: $!\n";
-	$idfile->close or die "$statedir/$name.id,new: $!\n";
+	flock($idfile, Fcntl::LOCK_EX) or die "$statedir/$name.id,new: $!\n";
 
 	rename "$statedir/.seq,new", "$statedir/.seq"
-		or die "Can't rename $statedir/.seq,new to $statedir/.seq: $!\n";
+		or die "can't rename $statedir/.seq,new to $statedir/.seq: $!\n";
 	rename "$statedir/$name.id,new", "$statedir/$name.id"
-		or die "Can't rename $statedir/$name.id,new to $statedir/$name.id: $!\n";
+		or die "can't rename $statedir/$name.id,new to $statedir/$name.id: $!\n";
 
-	return $id;
+	return [$id, $idfile];
 };
+
+sub id {
+	return $self->lock->[0];
+}
 
 field vhost_net => sub { -e '/dev/vhost-net' };
 
@@ -146,7 +161,6 @@ sub command {
 	my $rundir = $self->rundir;
 	my $name = $self->name;
 	my $id = $self->id;
-	my $vnc = $self->vnc ? "localhost:$id" : 'none';
 
 	my @cmd = ($self->kvm,
 		-name => $name,
@@ -155,7 +169,6 @@ sub command {
 		-daemonize,
 		-nodefaults,
 		-vga => 'cirrus',
-		-vnc => $vnc,
 	);
 
 	push @cmd, '-no-acpi'
@@ -306,6 +319,13 @@ sub devices_write {
 		pretty => 'on',
 	);
 
+	if($self->vnc) {
+		my $id = $self->id;
+		$self->devices_stanza(vnc => 'default',
+			vnc => "localhost:$id",
+		);
+	}
+
 	if(defined $self->serialport) {
 		for(my $i = 0; $i < 4; $i++) {
 			$self->devices_stanza($fh, chardev => "serial-$i",
@@ -364,7 +384,7 @@ sub devices_write {
 		my $cache = $self->cache;
 		my $aio = $self->aio;
 		my %opt;
-		die "No such file or directory: $disk\n"
+		die "no such file or directory: $disk\n"
 			unless -e $disk;
 		if(-b _) {
 			$cache //= 'none';
@@ -387,8 +407,10 @@ sub devices_write {
 		);
 	}
 
-	my $firmware = $self->firmware;
-	if($firmware eq 'efi') {
+	my $platform = $self->platform;
+	if($platform eq 'efi') {
+		$self->lock;
+
 		my $ovmfdir = $self->ovmfdir;
 		die "'$ovmfdir/OVMF_CODE.fd' not found\n"
 			unless -f "$ovmfdir/OVMF_CODE.fd";
@@ -425,10 +447,16 @@ sub devices_write {
 #		driver => 'ide-cd',
 #		drive => 'cdrom',
 #	);
+
+	my $sections = $self->sections;
+	foreach my $section (@$sections) {
+		$self->devices_stanza($fh, @$section);
+	}
 }
 
 sub devices_file {
 	my $path = shift;
+	$self->lock;
 	my $fh = new IO::File($path, '>')
 		or die "$path: $!\n";
 	$self->devices_write($fh);

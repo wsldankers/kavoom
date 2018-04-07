@@ -15,7 +15,7 @@ merge cpus => undef;
 merge acpi => 1;
 merge vnc => undef;
 merge tablet => undef;
-merge firmware => 'mbr';
+merge platform => 'bios';
 merge ovmfdir => '/usr/share/OVMF';
 merge statedir;
 merge rundir;
@@ -85,12 +85,12 @@ sub set_virtio {
 	$self->virtio(bool(shift));
 }
 
-sub set_firmware {
+sub set_platform {
 	local $_ = lc(shift);
-	if(/^(?:mbr|efi)\z/) {
-		$self->firmware($_);
+	if(/^(?:bios|efi)\z/) {
+		$self->platform($_);
 	} else {
-		die "unknown firmware type '$_' (possible values: mbr, efi)\n";
+		die "unknown platform type '$_' (possible values: bios, efi)\n";
 	}
 }
 
