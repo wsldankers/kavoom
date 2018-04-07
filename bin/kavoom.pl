@@ -411,6 +411,16 @@ The default is I<0>.
 
 Whether to enable ACPI on this VM.
 
+=item C<firmware> = I<bios>/I<efi>
+
+Select the firmware type, which can be either I<bios> for traditional PC
+BIOS operation or I<efi> for EFI64 booting (using OVMF).
+
+=item C<ovmfdir> = I</path/to/ovmf>
+
+The directory containing the OVMF files required for EFI booting, in
+particular C<OVMF_CODE.fd> and C<OVMF_VARS.fd>. See also C<firmware>.
+
 =item C<disk> = I<block device>
 
 Add a disk image, which will show up in the guest as a PATA disk. You can
@@ -422,7 +432,7 @@ interpreted as qcow2 format.
 =item C<drive> = I<drivespec>
 
 Deprecated. If you need precise control over the disk parameters, use
-C<-drive> instead. Otherwise, use C<disk>.
+I<-drive> instead. Otherwise, use I<disk>.
 
 =item C<virtio> = I<yes>/I<no>
 
@@ -468,35 +478,44 @@ You can also specify kvm command line options directly, one per line.
 Any options thus given are appended to the command line when starting
 kvm. For example:
 
- -cdrom /tmp/debian-netinst.iso
- -no-reboot
+	-cdrom /tmp/debian-netinst.iso
+	-no-reboot
+
+Extra sections for the qemu configuration file can be added as well:
+
+	[smp-opts]
+	 cores = 4
+
+These will be appended to the devices file as-is with only minimal syntax
+checking. Unlike the real configuration file, quotes may be omitted. They
+will be added as necessary.
 
 =head1 EXAMPLE
 
 Sample configuration file (I<foobar.cfg>):
 
- mem = 1024
- disk = /dev/vg/foobar
- mac = 52:54:00:c8:37:e0
+	mem = 1024
+	disk = /dev/vg/foobar
+	mac = 52:54:00:c8:37:e0
 
 Sample session:
 
- # kavoom start foobar -cdrom /tmp/debian-netinst.iso
- # kavoom monitor foobar sum 435783 33
- 20681
- # kavoom monitor foobar 
- Escape character is '^]'.
- QEMU 0.9.1 monitor - type 'help' for more information
- (qemu) info balloon
- balloon: actual=1024
- (qemu) ^]
- # kavoom serial foobar
- Escape character is '^]'.
+	# kavoom start foobar -cdrom /tmp/debian-netinst.iso
+	# kavoom monitor foobar sum 435783 33
+	20681
+	# kavoom monitor foobar 
+	Escape character is '^]'.
+	QEMU 0.9.1 monitor - type 'help' for more information
+	(qemu) info balloon
+	balloon: actual=1024
+	(qemu) ^]
+	# kavoom serial foobar
+	Escape character is '^]'.
 
- Debian GNU/Linux 7.0 foobar ttyS0
+	Debian GNU/Linux 7.0 foobar ttyS0
 
- foobar login: ^]
- #
+	foobar login: ^]
+	#
 
 =head1 AUTHOR
 
@@ -504,7 +523,7 @@ Wessel Dankers <wsl@fruit.je>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2009-2017 Wessel Dankers <L<wsl@fruit.je>>
+Copyright (c) 2009-2018 Wessel Dankers <L<wsl@fruit.je>>
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

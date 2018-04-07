@@ -5,6 +5,7 @@ use KVM::Kavoom::Config -self;
 field disks => [];
 field nics => [];
 merge extra => [];
+merge sections => [];
 merge virtio => undef;
 merge virtconsole => undef;
 merge cache => undef;

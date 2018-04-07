@@ -1,10 +1,8 @@
-use strict;
-use warnings FATAL => 'all';
-use utf8;
-
 package KVM::Kavoom::Config;
 
 use Class::Clarity -self;
+
+use re '/aa';
 
 use IO::File;
 use Scalar::Util ();
@@ -13,7 +11,7 @@ our @EXPORT_BASE = qw(trim bool merge);
 
 sub trim() {
 	foreach(@_) {
-		s/(^\s+|\s+$)//g;
+		s/(^\s+|\s+\z)//g;
 		s/\s+/ /;
 	}
 }
@@ -85,18 +83,36 @@ sub load {
 	my $file = shift;
 
 	my $cfg = new IO::File($file, '<')
-		or die "Can't open $file: $!\n";
+		or die "can't open $file: $!\n";
+
+	my $section;
 
 	while(defined(local $_ = $cfg->getline)) {
-		next if /^\s*($|#)/;
-		trim($_);
-		if(ord == 45) { # -
-			my ($key, $val) = split(' ', $_, 2);
-			my $extra = $self->extra;
-			push @$extra, $key;
-			push @$extra, $val if defined $val;
-		} else {
-			eval {
+		next if /^\s*(\z|#)/;
+		s/(\s+\z)//g;
+		s/\s+/ /;
+		my $ord = ord;
+		eval {
+			if($ord == 45) { # -
+				undef $section;
+				my ($key, $val) = split(' ', $_, 2);
+				my $extra = $self->extra;
+				push @$extra, $key;
+				push @$extra, $val if defined $val;
+			} elsif($ord == 91) { # [
+				/^\[ ?(\S+)(?: ?(?:([^] "](?:[^]]*[^] "])?)|"(.*)"))? ?]\z/
+					or die "can't parse section declaration\n";
+				$section = [$1, $2 // $3];
+				push @{$self->sections}, $section;
+			} elsif($ord == 32) { # space
+				die "section continuation without a section start\n"
+					unless $section;
+				/^ (\S+) ?= ?(?:([^ "](?:.*[^ "])?)|"(.*)")\z/
+					or die "can't parse section continuation";
+				my ($key, $val) = ($1, $2 // $3);
+				push @$section, $key, $val;
+			} else {
+				undef $section;
 				my ($key, $val) = split('=', $_, 2);
 				die "malformed line\n"
 					unless defined $val;
@@ -104,11 +120,11 @@ sub load {
 				my $lkey = 'set_'.lc($key);
 				eval { $self->$lkey($val) };
 				die "$key: $@" if $@;
-			};
-			if(my $err = $@) {
-				my $line = $cfg->input_line_number;
-				die "$file:$line: $@";
 			}
+		};
+		if(my $err = $@) {
+			my $line = $cfg->input_line_number;
+			die "$file:$line: $@";
 		}
 	}
 }
