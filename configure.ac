@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-AC_INIT(kavoom,4.0,[wsl-kavoom-bugs@fruit.je])
+AC_INIT(kavoom,5.0,[wsl-kavoom-bugs@fruit.je])
 AM_INIT_AUTOMAKE([foreign subdir-objects dist-xz no-dist-gzip])
 
 AC_CONFIG_SRCDIR(bin/kavoom.pl)

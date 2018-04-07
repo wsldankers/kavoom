@@ -1,8 +1,10 @@
-kavoom (4.1) UNRELEASED; urgency=medium
+kavoom (5.0) stable; urgency=medium
 
   * Add EFI (OVMF) support.
 
- -- Wessel Dankers <wsl@uvt.nl>  Fri, 30 Mar 2018 23:31:00 +0200
+  * Add support for qemu configuration file sections.
+
+ -- Wessel Dankers <wsl@uvt.nl>  Sat, 07 Apr 2018 17:51:04 +0200
 
 kavoom (4.0) stable; urgency=medium
 
