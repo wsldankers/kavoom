@@ -3,6 +3,7 @@ package KVM::Kavoom::Instance;
 use re '/aa';
 
 use Class::Clarity -self;
+
 use IO::File;
 use IO::Socket::UNIX;
 use File::Copy qw(copy);
@@ -16,10 +17,17 @@ field name;
 sub configvar(*@) {
     my $name = shift;
 	if(@_) {
-		my $postproc = shift;
-		field($name, eval qq{sub { my \$self = shift; return \$postproc->(\$self->config->$name(@_)) }});
+		my ($postproc, @args) = @_;
+		my $isset = "${name}_isset";
+		field($name, sub {
+			my $self = shift;
+			my $config = $self->config;
+			return $config->$isset
+				? $config->$name
+				: $postproc->(@args);
+		});
 	} else {
-		field($name, eval qq{sub { my \$self = shift; return \$self->config->$name(@_) }});
+		field($name, sub { shift->config->$name });
 	}
 }
 
@@ -37,11 +45,23 @@ configvar aio;
 configvar serialport;
 configvar kvm;
 configvar vnc;
+configvar usb;
 configvar mem;
 configvar cpus;
 configvar acpi;
 configvar platform;
 configvar ovmfdir;
+configvar chipset => sub {
+	my $platform = $self->platform;
+	return undef unless defined $platform;
+	return undef if $platform eq 'bios';
+	return 'q35';
+};
+configvar tablet => sub {
+	return exists $self->{tablet}
+		? $self->{tablet}
+		: $self->{vnc};
+};
 configvar hugepages => sub {
 	my $hugepages;
 
@@ -127,13 +147,6 @@ sub id {
 }
 
 field vhost_net => sub { -e '/dev/vhost-net' };
-
-sub tablet {
-	return $self->{tablet} = bool(shift) if @_;
-	return exists $self->{tablet}
-		? $self->{tablet}
-		: $self->{vnc};
-}
 
 sub nictype {
 	return $self->virtio ? 'virtio-net' : 'e1000';
@@ -438,6 +451,13 @@ sub devices_write {
 			file => "$statedir/$name.efi",
 			format => 'raw',
 		);
+	}
+
+	my $chipset = $self->chipset;
+	my @chipset = (type => $chipset) if defined $chipset;
+	my @usb = (usb => 'on') if $self->usb;
+	if(my @machine = (@chipset, @usb)) {
+		$self->devices_stanza($fh, machine => undef, @machine);
 	}
 
 #	$self->devices_stanza($fh, drive => 'cdrom',

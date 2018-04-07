@@ -15,6 +15,7 @@ merge mem => undef;
 merge cpus => undef;
 merge acpi => 1;
 merge vnc => undef;
+merge usb => 0;
 merge tablet => undef;
 merge platform => 'bios';
 merge ovmfdir => '/usr/share/OVMF';
@@ -38,6 +39,10 @@ sub set_nics {
 
 sub set_vnc {
 	$self->vnc(bool(shift));
+}
+
+sub set_usb {
+	$self->usb(bool(shift));
 }
 
 sub set_tablet {
