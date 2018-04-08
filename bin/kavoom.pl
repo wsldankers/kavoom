@@ -381,6 +381,11 @@ The bridge that these devices will be connected to, can be configured in
 C</etc/kvm-ifup> (or C</etc/kvm/kvm-ifup>, depending on how kvm is
 installed).
 
+=item C<usb> = I<yes>/I<no>
+
+Whether to add a USB controller to the VM. Corresponds to the qemu C<-usb>
+command line option. Default is I<no>.
+
 =item C<vnc> = I<yes>/I<no>
 
 Whether to allocate a VNC socket. You can also add or remove such a socket
@@ -411,15 +416,15 @@ The default is I<0>.
 
 Whether to enable ACPI on this VM.
 
-=item C<firmware> = I<bios>/I<efi>
+=item C<platform> = I<bios>/I<efi>
 
-Select the firmware type, which can be either I<bios> for traditional PC
+Select the platform type, which can be either I<bios> for traditional PC
 BIOS operation or I<efi> for EFI64 booting (using OVMF).
 
 =item C<ovmfdir> = I</path/to/ovmf>
 
 The directory containing the OVMF files required for EFI booting, in
-particular C<OVMF_CODE.fd> and C<OVMF_VARS.fd>. See also C<firmware>.
+particular C<OVMF_CODE.fd> and C<OVMF_VARS.fd>. See also C<platform>.
 
 =item C<disk> = I<block device>
 

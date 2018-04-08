@@ -14,11 +14,12 @@ merge serialport => 0;
 merge mem => undef;
 merge cpus => undef;
 merge acpi => 1;
-merge vnc => undef;
 merge usb => 0;
+merge vnc => undef;
 merge tablet => undef;
 merge platform => 'bios';
 merge ovmfdir => '/usr/share/OVMF';
+merge chipset;
 merge statedir;
 merge rundir;
 merge kvm;
@@ -98,6 +99,10 @@ sub set_platform {
 	} else {
 		die "unknown platform type '$_' (possible values: bios, efi)\n";
 	}
+}
+
+sub set_chipset {
+	$self->chipset(shift);
 }
 
 sub set_ovmfdir {

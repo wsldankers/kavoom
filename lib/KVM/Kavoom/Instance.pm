@@ -24,7 +24,7 @@ sub configvar(*@) {
 			my $config = $self->config;
 			return $config->$isset
 				? $config->$name
-				: $postproc->(@args);
+				: $postproc->($self, @args);
 		});
 	} else {
 		field($name, sub { shift->config->$name });
@@ -44,8 +44,8 @@ configvar cache;
 configvar aio;
 configvar serialport;
 configvar kvm;
-configvar vnc;
 configvar usb;
+configvar vnc;
 configvar mem;
 configvar cpus;
 configvar acpi;
@@ -307,6 +307,13 @@ sub devices_write {
 	$self->devices_stanza($fh, memory => undef, size => $mem)
 		if defined $mem;
 
+	my $chipset = $self->chipset;
+	my @chipset = (type => $chipset) if defined $chipset;
+	my @usb = (usb => 'on') if $self->usb;
+	if(my @machine = (@chipset, @usb)) {
+		$self->devices_stanza($fh, machine => undef, @machine);
+	}
+
 	$self->devices_stanza($fh, chardev => 'monitor',
 		backend => 'socket',
 		server => 'on',
@@ -334,7 +341,7 @@ sub devices_write {
 
 	if($self->vnc) {
 		my $id = $self->id;
-		$self->devices_stanza(vnc => 'default',
+		$self->devices_stanza($fh, vnc => 'default',
 			vnc => "localhost:$id",
 		);
 	}
@@ -374,52 +381,6 @@ sub devices_write {
 		}
 	}
 
-	my $nics = $self->nics;
-	my $nictype = $self->nictype;
-	my @vhost_net = (vhost => 'on')
-		if $self->vhost_net;
-	while(my ($i, $mac) = each @$nics) {
-		$self->devices_stanza($fh, netdev => "net-$i",
-			type => 'tap',
-			ifname => $name.$i,
-			@vhost_net,
-		);
-		$self->devices_stanza($fh, device => "net-$i", 
-			driver => $nictype,
-			netdev => "net-$i",
-			mac => $mac,
-		);
-	}
-
-	my $disks = $self->disks;
-	my $disktype = $self->disktype;
-	while(my ($i, $disk) = each @$disks) {
-		my $cache = $self->cache;
-		my $aio = $self->aio;
-		my %opt;
-		die "no such file or directory: $disk\n"
-			unless -e $disk;
-		if(-b _) {
-			$cache //= 'none';
-			$aio //= 'native' if $cache eq 'none';
-			$opt{format} = 'raw';
-		}
-		my $serial = substr(md5_base64($disk), 0, 20);
-		$serial =~ tr{+/}{XY};
-		$opt{serial} = $serial;
-		$opt{cache} = $cache if defined $cache;
-		$opt{aio} = $aio if defined $aio;
-		$self->devices_stanza($fh, drive => "blk-$i",
-			file => $disk,
-			if => 'none',
-			%opt,
-		);
-		$self->devices_stanza($fh, device => "blk-$i", 
-			driver => $disktype,
-			drive => "blk-$i",
-		);
-	}
-
 	my $platform = $self->platform;
 	if($platform eq 'efi') {
 		$self->lock;
@@ -453,11 +414,50 @@ sub devices_write {
 		);
 	}
 
-	my $chipset = $self->chipset;
-	my @chipset = (type => $chipset) if defined $chipset;
-	my @usb = (usb => 'on') if $self->usb;
-	if(my @machine = (@chipset, @usb)) {
-		$self->devices_stanza($fh, machine => undef, @machine);
+	my $disks = $self->disks;
+	my $disktype = $self->disktype;
+	while(my ($i, $disk) = each @$disks) {
+		my $cache = $self->cache;
+		my $aio = $self->aio;
+		my %opt;
+		die "no such file or directory: $disk\n"
+			unless -e $disk;
+		if(-b _) {
+			$cache //= 'none';
+			$aio //= 'native' if $cache eq 'none';
+			$opt{format} = 'raw';
+		}
+		my $serial = substr(md5_base64($disk), 0, 20);
+		$serial =~ tr{+/}{XY};
+		$opt{serial} = $serial;
+		$opt{cache} = $cache if defined $cache;
+		$opt{aio} = $aio if defined $aio;
+		$self->devices_stanza($fh, drive => "blk-$i",
+			file => $disk,
+			if => 'none',
+			%opt,
+		);
+		$self->devices_stanza($fh, device => "blk-$i", 
+			driver => $disktype,
+			drive => "blk-$i",
+		);
+	}
+
+	my $nics = $self->nics;
+	my $nictype = $self->nictype;
+	my @vhost_net = (vhost => 'on')
+		if $self->vhost_net;
+	while(my ($i, $mac) = each @$nics) {
+		$self->devices_stanza($fh, netdev => "net-$i",
+			type => 'tap',
+			ifname => $name.$i,
+			@vhost_net,
+		);
+		$self->devices_stanza($fh, device => "net-$i", 
+			driver => $nictype,
+			netdev => "net-$i",
+			mac => $mac,
+		);
 	}
 
 #	$self->devices_stanza($fh, drive => 'cdrom',
