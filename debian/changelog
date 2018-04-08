@@ -1,3 +1,10 @@
+kavoom (6.0) UNRELEASED; urgency=medium
+
+  * Add support for machine models and use q35 by default when
+    EFI is selected.
+
+ -- Wessel Dankers <wsl@uvt.nl>  Sun, 08 Apr 2018 17:13:31 +0200
+
 kavoom (5.0) stable; urgency=medium
 
   * Add EFI (OVMF) support.

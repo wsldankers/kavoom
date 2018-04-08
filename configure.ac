@@ -1,5 +1,11 @@
 AC_PREREQ(2.59)
-AC_INIT(kavoom,5.0,[wsl-kavoom-bugs@fruit.je])
+
+AC_INIT(kavoom,m4_esyscmd_s([
+	read -r debian_version <debian/changelog
+	debian_version=${debian_version#*\(}
+	debian_version=${debian_version%%\)*}
+	echo "${debian_version%-*}"
+]),[wsl-kavoom-bugs@fruit.je])
 AM_INIT_AUTOMAKE([foreign subdir-objects dist-xz no-dist-gzip])
 
 AC_CONFIG_SRCDIR(bin/kavoom.pl)
