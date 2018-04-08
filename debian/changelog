@@ -3,6 +3,8 @@ kavoom (6.0) UNRELEASED; urgency=medium
   * Add support for machine models and use q35 by default when
     EFI is selected.
 
+  * Fix bugs in option parsing and documentation.
+
  -- Wessel Dankers <wsl@uvt.nl>  Sun, 08 Apr 2018 17:13:31 +0200
 
 kavoom (5.0) stable; urgency=medium
@@ -68,9 +70,9 @@ kavoom (3.0) stable; urgency=low
 kavoom (2.16) stable; urgency=low
 
   * Use dh_installinit --no-start to avoid stop/start on upgrade
-    
+
   * libkvm-kavoom-perl.install seems to be superfluous these days
-    
+
   * Update debian/copyright file
 
   * Use vhost_net if available
@@ -197,7 +199,7 @@ kavoom (2.2-1) stable; urgency=low
 kavoom (2.1-1) stable; urgency=low
 
   * New upstream version:
-    - Only enable USB tablet if VNC was enabled (saves CPU) 
+    - Only enable USB tablet if VNC was enabled (saves CPU)
 
  -- Wessel Dankers <wsl@fruit.je>  Wed, 06 Oct 2010 10:34:41 +0200
 

@@ -320,8 +320,8 @@ sub devices_write {
 		wait => 'off',
 		path => "$rundir/$name.monitor",
 	);
-	
-	$self->devices_stanza($fh, mon => 'monitor', 
+
+	$self->devices_stanza($fh, mon => 'monitor',
 		mode => 'readline',
 		chardev => 'monitor',
 	);
@@ -332,8 +332,8 @@ sub devices_write {
 		wait => 'off',
 		path => "$rundir/$name.qmp",
 	);
-	
-	$self->devices_stanza($fh, mon => 'qmp', 
+
+	$self->devices_stanza($fh, mon => 'qmp',
 		mode => 'control',
 		chardev => 'qmp',
 		pretty => 'on',
@@ -354,7 +354,7 @@ sub devices_write {
 				wait => 'off',
 				path => "$rundir/$name.serial-$i",
 			);
-			$self->devices_stanza($fh, device => "serial-$i", 
+			$self->devices_stanza($fh, device => "serial-$i",
 				driver => 'isa-serial',
 				chardev => "serial-$i",
 			);
@@ -373,7 +373,7 @@ sub devices_write {
 				wait => 'off',
 				path => "$rundir/$name.console-$i",
 			);
-			$self->devices_stanza($fh, device => 'virtconsole', 
+			$self->devices_stanza($fh, device => 'virtconsole',
 				driver => 'virtconsole',
 				chardev => "console-$i",
 				name => "hvc$i",
@@ -437,7 +437,7 @@ sub devices_write {
 			if => 'none',
 			%opt,
 		);
-		$self->devices_stanza($fh, device => "blk-$i", 
+		$self->devices_stanza($fh, device => "blk-$i",
 			driver => $disktype,
 			drive => "blk-$i",
 		);
@@ -453,7 +453,7 @@ sub devices_write {
 			ifname => $name.$i,
 			@vhost_net,
 		);
-		$self->devices_stanza($fh, device => "net-$i", 
+		$self->devices_stanza($fh, device => "net-$i",
 			driver => $nictype,
 			netdev => "net-$i",
 			mac => $mac,

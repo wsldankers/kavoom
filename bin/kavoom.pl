@@ -508,7 +508,7 @@ Sample session:
 	# kavoom start foobar -cdrom /tmp/debian-netinst.iso
 	# kavoom monitor foobar sum 435783 33
 	20681
-	# kavoom monitor foobar 
+	# kavoom monitor foobar
 	Escape character is '^]'.
 	QEMU 0.9.1 monitor - type 'help' for more information
 	(qemu) info balloon

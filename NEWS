@@ -1,3 +1,26 @@
+6.0
+	Add support for machine models and use q35 by default when EFI is selected.
+	Fix bugs in option parsing and documentation.
+
+5.0
+	Add EFI (OVMF) support.
+	Add support for qemu configuration file sections.
+
+4.0
+	Allow VM options in global configuration file.
+	Fix init script dependencies.
+	Obey aio restrictions.
+
+3.4
+	Assign an ID to all devices.
+	Switch to Class::Clarity.
+
+3.3
+	Rename virtconsole to just console.
+	Add /etc/default/kavoom file.
+	Add a QMP socket for each VM.
+	Fix bug that caused virtio-net to be used even with virtio=no
+
 3.2
 	Disable virtconsole by default and add an option to enable it
 
@@ -16,7 +39,7 @@
 2.15
 	Deprecate boot= as per qemu-kvm upstream
 	Add name= to nic hardware
-	
+
 2.14
 	Remove pidfile locking kludge
 
