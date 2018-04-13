@@ -181,6 +181,7 @@ sub command {
 		-readconfig => $devices,
 		-daemonize,
 		-nodefaults,
+		-nographic,
 		-vga => 'cirrus',
 	);
 
