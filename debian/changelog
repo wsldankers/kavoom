@@ -1,9 +1,11 @@
-kavoom (6.0) UNRELEASED; urgency=medium
+kavoom (6.0) stable; urgency=medium
 
   * Add support for machine models and use q35 by default when
     EFI is selected.
 
   * Fix bugs in option parsing and documentation.
+
+  * Add -nographic to appease newer QEMU versions.
 
  -- Wessel Dankers <wsl@uvt.nl>  Sun, 08 Apr 2018 17:13:31 +0200
 
