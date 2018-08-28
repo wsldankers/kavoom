@@ -1,3 +1,9 @@
+kavoom (6.1) stable; urgency=medium
+
+  * Fix savestate.
+
+ -- Wessel Dankers <wsl@uvt.nl>  Tue, 28 Aug 2018 11:21:08 +0200
+
 kavoom (6.0) stable; urgency=medium
 
   * Add support for machine models and use q35 by default when
