@@ -20,7 +20,10 @@ stopaction=savestate
 stoporder=parallel
 stagger=3
 modprobe_vhost_net=yes
-gzip='exec gzip --fast'
+
+# qemu deems it necessary to send a SIGTERM before gzip is done
+# so we need the shell process to catch the bullet for it.
+gzip='gzip --fast'
 zcat='exec zcat -f'
 
 test -x $program || exit 0
@@ -85,7 +88,6 @@ case $action in start)
 				rm -f "$state" "$spent"
 				$program monitor "$i" sendkey alt-sysrq-s
 				sleep 2
-				$program monitor "$i" stop
 				$program monitor "$i" "migrate \"exec:$gzip >'$spent'\"" &&
 					mv "$spent" "$state"
 				$program destroy "$i"
