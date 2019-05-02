@@ -7,7 +7,7 @@ field nics => [];
 merge extra => [];
 merge sections => [];
 merge virtio => undef;
-merge virtconsole => undef;
+merge virtconsole;
 merge cache => undef;
 merge aio => undef;
 merge serialport => 0;

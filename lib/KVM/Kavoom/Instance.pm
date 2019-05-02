@@ -39,12 +39,12 @@ configvar nics;
 configvar extra;
 configvar sections;
 configvar virtio;
-configvar virtconsole;
+configvar virtconsole => sub { $self->virtio };
 configvar cache;
 configvar aio;
 configvar serialport;
 configvar kvm;
-configvar usb;
+configvar usb => sub { $self->tablet };
 configvar vnc;
 configvar mem;
 configvar cpus;
@@ -188,9 +188,6 @@ sub command {
 	push @cmd, '-no-acpi'
 		if !$self->acpi;
 
-	push @cmd, -usbdevice => 'tablet'
-		if $self->tablet;
-
 	my $hugepages = $self->hugepages;
 	push @cmd, '-mem-path' => $hugepages
 		if defined $hugepages;
@@ -309,11 +306,8 @@ sub devices_write {
 		if defined $mem;
 
 	my $chipset = $self->chipset;
-	my @chipset = (type => $chipset) if defined $chipset;
-	my @usb = (usb => 'on') if $self->usb;
-	if(my @machine = (@chipset, @usb)) {
-		$self->devices_stanza($fh, machine => undef, @machine);
-	}
+	$self->devices_stanza($fh, machine => undef, type => $chipset)
+		if defined $chipset;
 
 	$self->devices_stanza($fh, chardev => 'monitor',
 		backend => 'socket',
@@ -374,13 +368,19 @@ sub devices_write {
 				wait => 'off',
 				path => "$rundir/$name.console-$i",
 			);
-			$self->devices_stanza($fh, device => 'virtconsole',
+			$self->devices_stanza($fh, device => "virtconsole-$i",
 				driver => 'virtconsole',
 				chardev => "console-$i",
 				name => "hvc$i",
 			);
 		}
 	}
+
+	$self->devices_stanza($fh, device => 'xhci', driver => 'qemu-xhci')
+		if $self->usb;
+
+	$self->devices_stanza($fh, device => 'tablet', driver => 'usb-tablet')
+		if $self->tablet;
 
 	my $platform = $self->platform;
 	if($platform eq 'efi') {
@@ -418,29 +418,33 @@ sub devices_write {
 	my $disks = $self->disks;
 	my $disktype = $self->disktype;
 	while(my ($i, $disk) = each @$disks) {
-		my $cache = $self->cache;
-		my $aio = $self->aio;
-		my %opt;
 		die "no such file or directory: $disk\n"
 			unless -e $disk;
+
+		my %opt;
+		my $cache = $self->cache;
+		my $aio = $self->aio;
 		if(-b _) {
 			$cache //= 'none';
 			$aio //= 'native' if $cache eq 'none';
 			$opt{format} = 'raw';
 		}
-		my $serial = substr(md5_base64($disk), 0, 20);
-		$serial =~ tr{+/}{XY};
-		$opt{serial} = $serial;
 		$opt{cache} = $cache if defined $cache;
 		$opt{aio} = $aio if defined $aio;
+
 		$self->devices_stanza($fh, drive => "blk-$i",
 			file => $disk,
 			if => 'none',
 			%opt,
 		);
+
+		my $serial = substr(md5_base64($disk), 0, 20);
+		$serial =~ tr{+/}{XY};
+
 		$self->devices_stanza($fh, device => "blk-$i",
 			driver => $disktype,
 			drive => "blk-$i",
+			serial => $serial,
 		);
 	}
 
