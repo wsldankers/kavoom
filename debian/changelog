@@ -1,3 +1,11 @@
+kavoom (6.2) stable; urgency=medium
+
+  * Add serial= to the device section for block devices.
+
+  * Modernize usb bus support.
+
+ -- Wessel Dankers <wsl@uvt.nl>  Tue, 23 Apr 2019 11:52:26 +0200
+
 kavoom (6.1) stable; urgency=medium
 
   * Fix savestate.

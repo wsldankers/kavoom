@@ -384,7 +384,8 @@ installed).
 =item C<usb> = I<yes>/I<no>
 
 Whether to add a USB controller to the VM. Corresponds to the qemu C<-usb>
-command line option. Default is I<no>.
+command line option. Default is I<yes> if a tablet is (implicitly) enabled,
+I<no> otherwise.
 
 =item C<vnc> = I<yes>/I<no>
 
